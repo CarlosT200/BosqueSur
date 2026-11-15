@@ -1,0 +1,217 @@
+// ======================================================================
+// Esquema Prisma - BosqueSur Maderas SpA (Evaluacion Sumativa 3 / Sprint 1)
+//
+// Fuente unica de informacion: el inventario se mantiene SOLO a traves de
+// movimientos registrados por el backend dentro de transacciones. No se
+// guardan saldos paralelos calculados a mano.
+//
+// Todos los volumenes y cantidades usan Decimal para evitar errores de
+// punto flotante.
+// ======================================================================
+
+generator client {
+  // Generador moderno con queryCompiler + engineType "client": produce un
+  // cliente con motor WebAssembly puro (sin binario Rust nativo), que se
+  // conecta a PostgreSQL mediante el driver adapter @prisma/adapter-pg.
+  provider        = "prisma-client"
+  output          = "../src/generated/prisma"
+  runtime         = "nodejs"
+  engineType      = "client"
+  previewFeatures = ["queryCompiler"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------------------------------------------------------------------
+// Enums
+// ---------------------------------------------------------------------
+
+enum Role {
+  ADMIN
+  TERRENO
+  BODEGA
+  GERENCIA
+}
+
+enum DespachoEstado {
+  PENDIENTE
+  RECIBIDO
+}
+
+// Resolucion obligatoria cuando la diferencia es distinta de cero.
+enum ResolucionRecepcion {
+  INCIDENCIA_ABIERTA
+  AJUSTE_ACEPTADO
+  RECHAZADO
+}
+
+// Tipo de movimiento de inventario. En el alcance de la Evaluacion 3
+// el unico movimiento es la entrada por recepcion de un despacho.
+enum MovimientoTipo {
+  ENTRADA_RECEPCION
+}
+
+enum AuditResultado {
+  EXITO
+  FALLO
+  DENEGADO
+}
+
+// ---------------------------------------------------------------------
+// Entidades
+// ---------------------------------------------------------------------
+
+model User {
+  id           String   @id @default(cuid())
+  nombre       String
+  email        String   @unique
+  passwordHash String
+  role         Role
+  activo       Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // Relaciones inversas
+  cosechas           Cosecha[]           @relation("CosechaResponsable")
+  despachosCreados   Despacho[]          @relation("DespachoCreador")
+  recepciones        Recepcion[]         @relation("RecepcionReceptor")
+  movimientos        InventoryMovement[] @relation("MovimientoUsuario")
+  auditorias         AuditLog[]          @relation("AuditUsuario")
+
+  @@index([role])
+  @@map("users")
+}
+
+model Predio {
+  id          String   @id @default(cuid())
+  nombre      String
+  ubicacion   String
+  descripcion String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  cosechas Cosecha[]
+
+  @@index([nombre])
+  @@map("predios")
+}
+
+model Cosecha {
+  id            String   @id @default(cuid())
+  predioId      String
+  fecha         DateTime
+  responsableId String
+  especie       String
+  volumenM3     Decimal  @db.Decimal(12, 3)
+  observacion   String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  predio      Predio     @relation(fields: [predioId], references: [id], onDelete: Restrict)
+  responsable User       @relation("CosechaResponsable", fields: [responsableId], references: [id], onDelete: Restrict)
+  despachos   Despacho[]
+
+  @@index([predioId])
+  @@index([especie])
+  @@index([fecha])
+  @@map("cosechas")
+}
+
+model Despacho {
+  id                  String         @id @default(cuid())
+  codigo              String         @unique
+  cosechaId           String?
+  especie             String
+  volumenDespachadoM3 Decimal        @db.Decimal(12, 3)
+  fechaDespacho       DateTime
+  estado              DespachoEstado @default(PENDIENTE)
+  creadorId           String
+  createdAt           DateTime       @default(now())
+  updatedAt           DateTime       @updatedAt
+
+  cosecha   Cosecha?   @relation(fields: [cosechaId], references: [id], onDelete: SetNull)
+  creador   User       @relation("DespachoCreador", fields: [creadorId], references: [id], onDelete: Restrict)
+  recepcion Recepcion?
+
+  @@index([estado])
+  @@index([especie])
+  @@index([fechaDespacho])
+  @@map("despachos")
+}
+
+model Recepcion {
+  id               String               @id @default(cuid())
+  despachoId       String               @unique
+  volumenRecibidoM3 Decimal             @db.Decimal(12, 3)
+  diferenciaM3     Decimal              @db.Decimal(12, 3)
+  fechaRecepcion   DateTime
+  resolucion       ResolucionRecepcion?
+  observacion      String?
+  receptorId       String
+  createdAt        DateTime             @default(now())
+  updatedAt        DateTime             @updatedAt
+
+  despacho   Despacho            @relation(fields: [despachoId], references: [id], onDelete: Restrict)
+  receptor   User                @relation("RecepcionReceptor", fields: [receptorId], references: [id], onDelete: Restrict)
+  movimientos InventoryMovement[]
+
+  @@index([fechaRecepcion])
+  @@index([resolucion])
+  @@map("recepciones")
+}
+
+model InventoryItem {
+  id         String   @id @default(cuid())
+  especie    String   @unique
+  cantidadM3 Decimal  @db.Decimal(14, 3) @default(0)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  movimientos InventoryMovement[]
+
+  @@map("inventory_items")
+}
+
+model InventoryMovement {
+  id              String         @id @default(cuid())
+  inventoryItemId String
+  tipo            MovimientoTipo
+  cantidadM3      Decimal        @db.Decimal(12, 3)
+  saldoAnteriorM3 Decimal        @db.Decimal(14, 3)
+  saldoPosteriorM3 Decimal       @db.Decimal(14, 3)
+  recepcionId     String?
+  usuarioId       String
+  createdAt       DateTime       @default(now())
+
+  inventoryItem InventoryItem @relation(fields: [inventoryItemId], references: [id], onDelete: Restrict)
+  recepcion     Recepcion?    @relation(fields: [recepcionId], references: [id], onDelete: SetNull)
+  usuario       User          @relation("MovimientoUsuario", fields: [usuarioId], references: [id], onDelete: Restrict)
+
+  @@index([inventoryItemId])
+  @@index([recepcionId])
+  @@index([createdAt])
+  @@map("inventory_movements")
+}
+
+model AuditLog {
+  id        String         @id @default(cuid())
+  usuarioId String?
+  accion    String
+  entidad   String
+  entidadId String?
+  resultado AuditResultado
+  detalle   Json?
+  fecha     DateTime       @default(now())
+  ip        String?
+
+  usuario User? @relation("AuditUsuario", fields: [usuarioId], references: [id], onDelete: SetNull)
+
+  @@index([usuarioId])
+  @@index([accion])
+  @@index([entidad])
+  @@index([fecha])
+  @@map("audit_logs")
+}

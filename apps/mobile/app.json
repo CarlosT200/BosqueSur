@@ -1,0 +1,21 @@
+{
+  "expo": {
+    "name": "BosqueSur Terreno",
+    "slug": "bosquesur-terreno",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "resizeMode": "contain",
+      "backgroundColor": "#1b3b2a"
+    },
+    "assetBundlePatterns": ["**/*"],
+    "ios": { "supportsTablet": true },
+    "android": {
+      "package": "cl.bosquesur.terreno"
+    },
+    "extra": {
+      "apiUrl": "http://192.168.1.100:4000/api"
+    }
+  }
+}

@@ -1,0 +1,43 @@
+# Dependencias
+node_modules/
+.pnp
+.pnp.js
+
+# Variables de entorno (nunca subir secretos)
+.env
+.env.local
+.env.*.local
+apps/*/.env
+!apps/*/.env.example
+
+# Builds
+dist/
+build/
+apps/web/dist/
+apps/api/coverage/
+
+# Prisma
+apps/api/prisma/*.db
+
+# Expo
+apps/mobile/.expo/
+apps/mobile/web-build/
+*.jks
+*.p8
+*.p12
+
+# Datos locales de Postgres (si se usa volumen local)
+pgdata/
+
+# Logs
+*.log
+npm-debug.log*
+
+# Sistema
+.DS_Store
+Thumbs.db
+.vscode/*
+!.vscode/extensions.json
+
+# Cliente Prisma generado
+apps/api/src/generated/

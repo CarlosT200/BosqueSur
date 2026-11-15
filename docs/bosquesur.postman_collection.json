@@ -1,0 +1,143 @@
+{
+  "info": {
+    "name": "BosqueSur ES3 API",
+    "description": "Colección de endpoints del prototipo BosqueSur (Evaluación Sumativa 3). Importable en Postman, Thunder Client y Bruno. Ejecuta primero 'Auth > Login (BODEGA)' para cargar el token.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:4000/api" },
+    { "key": "token", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "Health",
+      "request": { "method": "GET", "url": "{{baseUrl}}/health" }
+    },
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Login (BODEGA)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "if (json.success) { pm.collectionVariables.set('token', json.data.token); }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"email\": \"bodega@bosquesur.cl\",\n  \"password\": \"Bodega123*\"\n}" },
+            "url": "{{baseUrl}}/auth/login"
+          }
+        },
+        {
+          "name": "Login (TERRENO)",
+          "event": [
+            {
+              "listen": "test",
+              "script": { "type": "text/javascript", "exec": ["const j=pm.response.json(); if(j.success){pm.collectionVariables.set('token', j.data.token);}"] }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"email\": \"terreno@bosquesur.cl\",\n  \"password\": \"Terreno123*\"\n}" },
+            "url": "{{baseUrl}}/auth/login"
+          }
+        },
+        {
+          "name": "Me",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/auth/me"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Predios",
+      "item": [
+        {
+          "name": "Listar predios",
+          "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }], "url": "{{baseUrl}}/predios" }
+        },
+        {
+          "name": "Crear predio",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "Authorization", "value": "Bearer {{token}}" }],
+            "body": { "mode": "raw", "raw": "{\n  \"nombre\": \"Fundo Nuevo\",\n  \"ubicacion\": \"Molina\",\n  \"descripcion\": \"Plantación de prueba\"\n}" },
+            "url": "{{baseUrl}}/predios"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Cosechas",
+      "item": [
+        {
+          "name": "Listar cosechas",
+          "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }], "url": "{{baseUrl}}/cosechas" }
+        },
+        {
+          "name": "Crear cosecha",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "Authorization", "value": "Bearer {{token}}" }],
+            "body": { "mode": "raw", "raw": "{\n  \"predioId\": \"prd_pinar_sur\",\n  \"fecha\": \"2026-11-15\",\n  \"especie\": \"Pino\",\n  \"volumenM3\": 95.25,\n  \"observacion\": \"Cosecha de prueba\"\n}" },
+            "url": "{{baseUrl}}/cosechas"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Despachos y recepción",
+      "item": [
+        {
+          "name": "Listar despachos pendientes",
+          "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }], "url": "{{baseUrl}}/despachos?estado=PENDIENTE" }
+        },
+        {
+          "name": "Detalle de despacho",
+          "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }], "url": "{{baseUrl}}/despachos/dsp_1" }
+        },
+        {
+          "name": "Registrar recepción (con diferencia)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "Authorization", "value": "Bearer {{token}}" }],
+            "body": { "mode": "raw", "raw": "{\n  \"volumenRecibidoM3\": 118.0,\n  \"fechaRecepcion\": \"2026-10-03\",\n  \"resolucion\": \"INCIDENCIA_ABIERTA\",\n  \"observacion\": \"Faltan 2.5 m3\"\n}" },
+            "url": "{{baseUrl}}/despachos/dsp_1/recepcion"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Inventario",
+      "item": [
+        { "name": "Existencias", "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }], "url": "{{baseUrl}}/inventario" } },
+        { "name": "Movimientos", "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }], "url": "{{baseUrl}}/inventario/movimientos?limit=50" } }
+      ]
+    },
+    {
+      "name": "Recepciones",
+      "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }], "url": "{{baseUrl}}/recepciones" }
+    },
+    {
+      "name": "Resumen",
+      "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }], "url": "{{baseUrl}}/resumen" }
+    },
+    {
+      "name": "Auditoría (ADMIN)",
+      "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }], "url": "{{baseUrl}}/auditoria?limit=100" }
+    }
+  ]
+}

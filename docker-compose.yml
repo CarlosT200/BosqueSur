@@ -1,0 +1,27 @@
+# ======================================================================
+# PostgreSQL para desarrollo local de BosqueSur ES3.
+# Uso: docker compose up -d
+# La API se conecta mediante DATABASE_URL (ver apps/api/.env.example).
+# No requiere servicios pagados.
+# ======================================================================
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: bosquesur_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-bosquesur}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-bosquesur_dev}
+      POSTGRES_DB: ${POSTGRES_DB:-bosquesur_es3}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - bosquesur_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-bosquesur} -d ${POSTGRES_DB:-bosquesur_es3}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  bosquesur_pgdata:

@@ -1,0 +1,35 @@
+{
+  "name": "bosquesur-es3",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Prototipo funcional BosqueSur Maderas SpA - Evaluacion Sumativa 3 (Sprint 1). Trazabilidad de materia prima: captura en terreno (movil) y recepcion/inventario en bodega (web) sobre una misma API y base de datos.",
+  "license": "UNLICENSED",
+  "workspaces": [
+    "apps/api",
+    "apps/web"
+  ],
+  "engines": {
+    "node": ">=22.18"
+  },
+  "scripts": {
+    "db:up": "docker compose up -d",
+    "db:down": "docker compose down",
+    "db:migrate": "npm run db:migrate -w apps/api",
+    "db:seed": "npm run db:seed -w apps/api",
+    "db:reset": "npm run db:reset -w apps/api",
+    "dev:api": "npm run dev -w apps/api",
+    "dev:web": "npm run dev -w apps/web",
+    "dev:mobile": "npm run start --prefix apps/mobile",
+    "dev": "concurrently -n api,web -c green,cyan \"npm:dev:api\" \"npm:dev:web\"",
+    "start:api": "npm run start -w apps/api",
+    "build:web": "npm run build -w apps/web",
+    "test": "npm run test -w apps/api",
+    "test:api": "npm run test -w apps/api",
+    "lint": "npm run lint -w apps/api && npm run lint -w apps/web",
+    "lint:api": "npm run lint -w apps/api",
+    "lint:web": "npm run lint -w apps/web"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.0"
+  }
+}
