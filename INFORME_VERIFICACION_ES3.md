@@ -11,6 +11,24 @@
 
 ---
 
+## Actualización — Etapa 2 de corrección (2026-11-16)
+
+Sobre el informe original se realizaron estas correcciones y adiciones (verificadas localmente):
+- **Concurrencia de inventario corregida:** `registrarRecepcion` ahora usa **incremento atómico**
+  (`upsert` con `increment`) para evitar pérdida de actualizaciones ante recepciones concurrentes de
+  la misma especie. Archivo: `apps/api/src/modules/despachos/despachos.service.js`.
+- **Pruebas: 18 → 20.** Se agregaron #18 (concurrencia: dos recepciones de la misma especie suman sin
+  pérdida) y #19 (autorización de operaciones críticas). `npm test` → **20/20**.
+- **Reinicio seguro de demostración:** `apps/api/prisma/demo-reset.js` + `npm run demo:reset` (con
+  `CONFIRM_DEMO_RESET=SI` y bloqueo en producción salvo `ALLOW_DEMO_RESET=true`). Sin endpoint público.
+- **Diagramas formales creados** (antes solo había ASCII): `docs/evaluacion3/` incluye topología,
+  infraestructura y arquitectura en **Mermaid** (`.mmd` + renderizado en GitHub), más análisis
+  comparativo, justificación, criterios/normas, seguridad/rendimiento (con **mediciones reales**),
+  matriz de rúbrica, checklist y evidencias. Esto eleva la sección D (rúbrica) de PARCIAL a completo.
+- **CI:** `.github/workflows/ci.yml` creado (pendiente de verificación en una corrida real de Actions).
+
+---
+
 ## A. Resumen del proyecto
 
 **Componentes construidos (monorepo npm workspaces):**
@@ -125,16 +143,16 @@ posible expiración de la BD gratuita de Render (ver sección M y N).
 | `npm run db:seed` | OK — 4 usuarios, 3 predios, 3 cosechas, 4 despachos, 2 inventarios iniciales |
 | `npm run lint:api` | **exit 0** (sin errores) |
 | `npm run lint:web` | **exit 0** (sin errores) |
-| `npm test` | **18 pruebas, 18 aprobadas, 0 fallidas** |
+| `npm test` | **20 pruebas, 20 aprobadas, 0 fallidas** (17 criterios de la pauta + rollback + concurrencia + autorización) |
 | `npm run build:web` | **OK** — 44 módulos; `dist/assets/index-*.js` 190.29 kB (gzip 60.37 kB) |
 | Arranque API (`node src/server.js`) | **OK** — `GET /api/health` → `{"status":"ok","db":"ok"}` |
 | Móvil (Expo) | Validación de sintaxis **14/14** archivos; ver nota abajo |
 
 **Salida resumida real de `npm test`:**
 ```
- ✓ tests/api.test.js (18 tests) 1246ms
+ ✓ tests/api.test.js (20 tests) 1388ms
  Test Files  1 passed (1)
-      Tests  18 passed (18)
+      Tests  20 passed (20)
    Duration  1.91s
 ```
 

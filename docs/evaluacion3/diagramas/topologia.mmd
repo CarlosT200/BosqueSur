@@ -1,0 +1,27 @@
+flowchart TD
+    subgraph Terreno["Terreno"]
+        U1["Usuario de terreno"]
+        PH["Smartphone Android / iPhone<br/>con Expo Go"]
+        MOB["App movil<br/>React Native (Expo)"]
+        U1 --> PH --> MOB
+    end
+
+    subgraph Oficina["Bodega / Administracion / Gerencia"]
+        U2["Personal de bodega,<br/>administracion y gerencia"]
+        BR["Navegador web"]
+        WEB["App React<br/>(sitio estatico)"]
+        U2 --> BR --> WEB
+    end
+
+    API["API REST<br/>Node.js + Express<br/>(JSON, JWT)"]
+    DB[("PostgreSQL")]
+    GH["GitHub<br/>(repositorio)"]
+    RND["Render<br/>(despliegue automatico)"]
+
+    MOB -- "HTTPS/TLS · JSON · JWT" --> API
+    WEB -- "HTTPS/TLS · JSON · JWT" --> API
+    API -- "SQL via Prisma" --> DB
+    GH -- "push a main → auto-deploy" --> RND
+    RND -. "hospeda" .-> WEB
+    RND -. "hospeda" .-> API
+    RND -. "hospeda" .-> DB

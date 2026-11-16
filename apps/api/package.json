@@ -16,7 +16,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "lint": "eslint \"src/**/*.js\" \"prisma/**/*.js\" \"tests/**/*.js\"",
-    "postinstall": "prisma generate"
+    "postinstall": "prisma generate",
+    "demo:reset": "node prisma/demo-reset.js"
   },
   "prisma": {
     "seed": "node prisma/seed.js"

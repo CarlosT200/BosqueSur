@@ -96,13 +96,13 @@ npm run dev
 
 ---
 
-## D) Pruebas automatizadas (17 criterios de la pauta)
+## D) Pruebas automatizadas (20 pruebas)
 
 ```bash
 npm test
 ```
 
-Resultado de referencia (2026-11-16): **18 pruebas aprobadas (18/18)** — los 17 criterios
+Resultado de referencia (2026-11-16): **20 pruebas aprobadas (20/20)** — los 17 criterios
 del punto 10 de la pauta + 1 prueba extra de atomicidad/rollback de la transacción de
 inventario. Peguen la salida real de `npm test` como evidencia.
 

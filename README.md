@@ -165,6 +165,7 @@ Desde la raíz:
 | `npm run db:migrate` | Aplica migraciones (`prisma migrate deploy`) |
 | `npm run db:seed` | Puebla datos de demostración |
 | `npm run db:reset` | Reinicia la base, migra y vuelve a sembrar |
+| `CONFIRM_DEMO_RESET=SI npm run demo:reset` | Reinicio seguro de datos de demostración (con confirmación) |
 | `npm run dev` | API + Web en paralelo |
 | `npm run dev:api` / `dev:web` / `dev:mobile` | Cada app por separado |
 | `npm run build:web` | Compila la web para producción |
@@ -190,15 +191,34 @@ Puertos: **API** `4000`, **Web** `5173` (preview `4173`), **Expo** `8081`, **Pos
 npm test          # Vitest + Supertest contra una base de prueba
 ```
 
-Cubren los 17 criterios del punto 10 de la pauta (login/JWT, 401/403, auditoría de accesos
+Son **20 pruebas**: los 17 criterios del punto 10 de la pauta más rollback, concurrencia de
+inventario y autorización (login/JWT, 401/403, auditoría de accesos
 denegados, registro de predio/cosecha, validación de volumen, recepción exacta y con diferencia,
 atomicidad de la transacción de inventario, etc.). Ver `docs/PRUEBAS_Y_EVIDENCIAS.md`.
+
+## Documentación de la Evaluación 3 (rúbrica)
+
+La carpeta [`docs/evaluacion3/`](docs/evaluacion3/) contiene los entregables de la rúbrica:
+diagramas de **topología**, **infraestructura** y **arquitectura** (Mermaid), **análisis cualitativo
+y cuantitativo** de tecnologías, **selección y justificación**, **criterios y normas**, **seguridad y
+rendimiento** (con mediciones reales), **matriz de cumplimiento**, **checklist** e **índice de
+evidencias**.
 
 ## Despliegue
 
 Ver `render.yaml` y `docs/PRUEBAS_Y_EVIDENCIAS.md`. Render provee PostgreSQL gestionado; la API usa
 `DATABASE_URL`, la web usa `VITE_API_URL` y Expo usa `EXPO_PUBLIC_API_URL`. El comando de
 construcción de la API ejecuta `prisma migrate deploy`.
+
+## Nota sobre el monorepo y la app móvil
+
+Los workspaces de npm incluyen **`apps/api`** y **`apps/web`**. La app móvil **`apps/mobile`** se
+mantiene como **instalación separada (fuera de los workspaces)** de forma deliberada: Expo/Metro
+tiene supuestos propios sobre la resolución de `node_modules` y el *hoisting* de dependencias que, al
+compartir el `node_modules` raíz, puede romper el empaquetado. Por eso se instala aparte
+(`cd apps/mobile && npm install`). De todos modos existe el comando raíz **`npm run dev:mobile`**
+para iniciarla. Si en el futuro se desea unificarla en los workspaces, debe añadirse un
+`metro.config.js` con `watchFolders`/`nodeModulesPaths` y verificarse en un entorno con Expo.
 
 ## Limitaciones conocidas
 

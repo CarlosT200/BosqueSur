@@ -1,0 +1,30 @@
+flowchart LR
+    subgraph LOCAL["Infraestructura de desarrollo local"]
+        DEV["Notebook / PC del equipo<br/>Node 22 · VS Code"]
+        DOCKER["Docker<br/>PostgreSQL 16"]
+        PHL["Smartphone + Expo Go<br/>(misma red Wi-Fi)"]
+        DEV --> DOCKER
+        PHL -. "LAN" .-> DEV
+    end
+
+    subgraph CLOUD["Infraestructura del prototipo desplegado · Render (plan gratuito)"]
+        STATIC["Render Static Site<br/>App web React"]
+        WEBSVC["Render Web Service<br/>API Node/Express"]
+        PG[("PostgreSQL administrado")]
+        ENV["Variables de entorno<br/>DATABASE_URL · JWT_SECRET · CORS_ORIGINS"]
+        TLS["Certificados HTTPS<br/>(gestionados)"]
+        WEBSVC --> PG
+        ENV -.-> WEBSVC
+        TLS -.-> STATIC
+        TLS -.-> WEBSVC
+    end
+
+    GH["GitHub"]
+    PHC["Smartphone + Expo Go<br/>(internet)"]
+
+    GH -- "push → deploy" --> STATIC
+    GH -- "push → deploy" --> WEBSVC
+    PHC -- "HTTPS" --> WEBSVC
+
+    classDef gratis fill:#fef9e7,stroke:#b7950b,color:#7d6608;
+    class STATIC,WEBSVC,PG gratis;

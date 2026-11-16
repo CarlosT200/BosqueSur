@@ -27,7 +27,8 @@
     "test:api": "npm run test -w apps/api",
     "lint": "npm run lint -w apps/api && npm run lint -w apps/web",
     "lint:api": "npm run lint -w apps/api",
-    "lint:web": "npm run lint -w apps/web"
+    "lint:web": "npm run lint -w apps/web",
+    "demo:reset": "npm run demo:reset -w apps/api"
   },
   "devDependencies": {
     "concurrently": "^9.1.0"

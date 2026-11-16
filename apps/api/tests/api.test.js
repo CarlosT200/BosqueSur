@@ -251,3 +251,60 @@ describe('Calidad, roles de consulta y errores', () => {
     expect(res.body.data.auditoria.length).toBeGreaterThan(0);
   });
 });
+
+describe('Concurrencia y autorizacion (correccion ES3 etapa 2)', () => {
+  it('18. Dos recepciones concurrentes de la misma especie no pierden actualizaciones', async () => {
+    const especie = 'ConcurrenciaPino';
+    // Inventario de la especie en 0 (se prueba el incremento atomico, no la creacion).
+    await prisma.inventoryItem.create({ data: { id: 'inv_conc', especie, cantidadM3: 0 } });
+    await prisma.despacho.createMany({
+      data: [
+        { id: 'dsp_conc_1', codigo: 'CONC-1', especie, volumenDespachadoM3: 10, fechaDespacho: new Date('2026-11-01'), estado: 'PENDIENTE', creadorId: 'usr_admin' },
+        { id: 'dsp_conc_2', codigo: 'CONC-2', especie, volumenDespachadoM3: 15, fechaDespacho: new Date('2026-11-01'), estado: 'PENDIENTE', creadorId: 'usr_admin' },
+      ],
+    });
+
+    const recibir = (id, vol) =>
+      request(app)
+        .post(`/api/despachos/${id}/recepcion`)
+        .set('Authorization', `Bearer ${tokens.BODEGA}`)
+        .send({ volumenRecibidoM3: vol, fechaRecepcion: '2026-11-02' });
+
+    // Ambas recepciones se procesan de forma concurrente.
+    const [r1, r2] = await Promise.all([recibir('dsp_conc_1', 10), recibir('dsp_conc_2', 15)]);
+    expect(r1.status).toBe(201);
+    expect(r2.status).toBe(201);
+
+    // El inventario final es la SUMA de ambas (no se perdio ninguna actualizacion).
+    const item = await prisma.inventoryItem.findUnique({ where: { especie } });
+    expect(Number(item.cantidadM3)).toBe(25);
+
+    // Existen ambos movimientos.
+    const movs = await prisma.inventoryMovement.findMany({ where: { inventoryItemId: item.id } });
+    expect(movs).toHaveLength(2);
+
+    // Ambos despachos quedaron RECIBIDO.
+    const d1 = await prisma.despacho.findUnique({ where: { id: 'dsp_conc_1' } });
+    const d2 = await prisma.despacho.findUnique({ where: { id: 'dsp_conc_2' } });
+    expect(d1.estado).toBe('RECIBIDO');
+    expect(d2.estado).toBe('RECIBIDO');
+  });
+
+  it('19. Cada operacion critica exige el rol correcto (403 cuando no corresponde)', async () => {
+    const casos = [
+      { tok: tokens.TERRENO, m: 'post', path: '/api/despachos/dsp_3/recepcion', body: { volumenRecibidoM3: 1, fechaRecepcion: '2026-11-02' } },
+      { tok: tokens.GERENCIA, m: 'post', path: '/api/despachos/dsp_3/recepcion', body: { volumenRecibidoM3: 1, fechaRecepcion: '2026-11-02' } },
+      { tok: tokens.BODEGA, m: 'post', path: '/api/predios', body: { nombre: 'X', ubicacion: 'Y' } },
+      { tok: tokens.BODEGA, m: 'post', path: '/api/cosechas', body: { predioId: 'prd_pinar_sur', fecha: '2026-11-02', especie: 'Pino', volumenM3: 1 } },
+      { tok: tokens.GERENCIA, m: 'get', path: '/api/auditoria' },
+      { tok: tokens.TERRENO, m: 'get', path: '/api/inventario' },
+      { tok: tokens.BODEGA, m: 'get', path: '/api/predios' },
+    ];
+    for (const c of casos) {
+      let req = request(app)[c.m](c.path).set('Authorization', `Bearer ${c.tok}`);
+      if (c.body) req = req.send(c.body);
+      const res = await req;
+      expect(res.status, `${c.m.toUpperCase()} ${c.path}`).toBe(403);
+    }
+  });
+});

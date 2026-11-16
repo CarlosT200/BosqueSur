@@ -1,0 +1,27 @@
+flowchart TB
+    subgraph P["Capa de Presentacion"]
+        WEB["React + Vite (web)<br/>Dashboard · vistas por rol"]
+        MOB["React Native + Expo (movil)<br/>vistas protegidas por rol"]
+    end
+
+    subgraph L["Capa de Logica de Negocio · API Express"]
+        AUTH["Autenticacion / Autorizacion<br/>JWT · roles"]
+        MOD["Predios · Cosechas · Despachos<br/>Recepciones · Inventario · Auditoria · Resumen"]
+        VAL["Validaciones (Zod)"]
+        ERR["Manejo central de errores"]
+    end
+
+    subgraph D["Capa de Datos"]
+        PRISMA["Prisma ORM"]
+        PG[("PostgreSQL")]
+        TX["Transacciones · Migraciones · Seed"]
+    end
+
+    WEB -->|HTTP · JSON · JWT| AUTH
+    MOB -->|HTTP · JSON · JWT| AUTH
+    AUTH --> MOD
+    MOD --> VAL
+    VAL --> PRISMA
+    PRISMA --> PG
+    TX -.-> PRISMA
+    ERR -.-> MOD

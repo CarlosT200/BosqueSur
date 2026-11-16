@@ -49,7 +49,7 @@ Preparación previa:
 6. Mostrar el **movimiento de inventario** y, como `ADMIN`, la **auditoría** (login, recepción,
    actualización de inventario, accesos denegados).
 7. Intentar recibir el mismo despacho de nuevo para mostrar el control **"no recibir dos veces"** (409).
-8. Cerrar mostrando **`npm test`** (17 criterios) y explicando el **alcance ajustado**: todo lo del
+8. Cerrar mostrando **`npm test`** (20 pruebas: 17 criterios + rollback, concurrencia y autorización) y explicando el **alcance ajustado**: todo lo del
    Sprint 1 funciona de punta a punta; producción, QR, SII, etc. quedan para sprints posteriores.
 
 > Evidencia criterio **2.1.6** (ajuste del alcance y tareas según el avance): se priorizaron los 5

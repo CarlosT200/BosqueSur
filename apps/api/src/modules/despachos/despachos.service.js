@@ -106,19 +106,21 @@ export async function registrarRecepcion(despachoId, data, user, ip) {
       },
     });
 
-    // 2. Crear o recuperar el item de inventario de la especie.
-    let item = await tx.inventoryItem.findUnique({ where: { especie: despacho.especie } });
-    if (!item) {
-      item = await tx.inventoryItem.create({ data: { especie: despacho.especie, cantidadM3: 0 } });
-    }
-    const saldoAnterior = round3(Number(item.cantidadM3));
-    const saldoPosterior = round3(saldoAnterior + volumenRecibido);
-
-    // 3. Actualizar existencias (fuente unica de informacion).
-    item = await tx.inventoryItem.update({
-      where: { id: item.id },
-      data: { cantidadM3: saldoPosterior },
+    // 2 y 3. Incremento ATOMICO de existencias (fuente unica de informacion).
+    //
+    // Se usa upsert con `increment`, que genera un UPDATE ... SET
+    // "cantidadM3" = "cantidadM3" + n. PostgreSQL bloquea la fila durante ese
+    // UPDATE y re-lee el valor bajo bloqueo, por lo que dos recepciones
+    // concurrentes de la MISMA especie no pierden actualizaciones (no hay
+    // "lost update"). El saldo posterior es el valor real devuelto tras el
+    // incremento; el saldo anterior se deriva restando lo recibido.
+    const item = await tx.inventoryItem.upsert({
+      where: { especie: despacho.especie },
+      create: { especie: despacho.especie, cantidadM3: volumenRecibido },
+      update: { cantidadM3: { increment: volumenRecibido } },
     });
+    const saldoPosterior = round3(Number(item.cantidadM3));
+    const saldoAnterior = round3(saldoPosterior - volumenRecibido);
 
     // 4. Crear el movimiento de inventario.
     const movimiento = await tx.inventoryMovement.create({

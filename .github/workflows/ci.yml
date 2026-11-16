@@ -1,0 +1,69 @@
+# Integración continua - BosqueSur ES3
+# NOTA: este workflow aún NO ha sido verificado en una corrida real de GitHub
+# Actions (requiere publicar el repositorio y que Actions lo ejecute). Hasta
+# entonces, trátese como "pendiente de verificación".
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: bosquesur
+          POSTGRES_PASSWORD: bosquesur_dev
+          POSTGRES_DB: bosquesur_es3_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U bosquesur -d bosquesur_es3_test"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=15
+
+    env:
+      DATABASE_URL: postgresql://bosquesur:bosquesur_dev@localhost:5432/bosquesur_es3_test?schema=public
+      JWT_SECRET: ci_secret_bosquesur_es3_0123456789
+      JWT_EXPIRES_IN: 1h
+      CORS_ORIGINS: http://localhost:5173
+      NODE_ENV: test
+      PRISMA_ENGINES_CHECKSUM_IGNORE_MISSING: "1"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22.18.0"
+          cache: "npm"
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      - name: Generar cliente Prisma
+        run: npm run prisma:generate -w apps/api
+
+      - name: Aplicar migraciones
+        run: npm run db:migrate -w apps/api
+
+      - name: Seed de datos
+        run: npm run db:seed -w apps/api
+
+      - name: Linter
+        run: npm run lint
+
+      - name: Pruebas automatizadas
+        run: npm test
+
+      - name: Build de la web
+        run: npm run build:web

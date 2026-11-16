@@ -7,7 +7,8 @@ npm test
 ```
 
 Se ejecutan con Vitest + Supertest contra una base de datos de prueba
-(`bosquesur_es3_test`). Cubren los 17 criterios del punto 10 de la pauta:
+(`bosquesur_es3_test`). Son **20 pruebas**: los 17 criterios del punto 10 de la pauta, más rollback
+transaccional, concurrencia de inventario y autorización de operaciones críticas:
 
 | # | Criterio | Estado |
 |---|----------|:------:|
@@ -28,6 +29,9 @@ Se ejecutan con Vitest + Supertest contra una base de datos de prueba
 | 15 | Errores entregan respuestas JSON controladas | ✅ |
 | 16 | GERENCIA consulta inventario pero no modifica | ✅ |
 | 17 | ADMIN consulta auditoría | ✅ |
+| 14b | Rollback: una transacción que falla se revierte por completo | ✅ |
+| 18 | Concurrencia: dos recepciones de la misma especie suman sin pérdida de actualizaciones | ✅ |
+| 19 | Autorización: cada operación crítica exige el rol correcto (403 si no corresponde) | ✅ |
 
 > Reemplaza esta tabla con la **salida real** de `npm test` al generar la evidencia.
 
