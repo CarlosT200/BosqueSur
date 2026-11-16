@@ -1,0 +1,372 @@
+# Informe de verificación — Evaluación Sumativa 3 · BosqueSur
+
+**Proyecto:** Prototipo de trazabilidad BosqueSur Maderas SpA (Sprint 1)
+**Fecha de verificación:** 2026-11-16
+**Repositorio:** https://github.com/CarlosT200/BosqueSur
+**Entorno de verificación:** Linux, Node v22.23.4, npm 10.9.9, PostgreSQL 16 (local).
+
+> Todos los resultados de este informe provienen de ejecuciones reales realizadas en
+> esta verificación. Donde algo **no** pudo ejecutarse en este entorno, se indica
+> explícitamente cómo se validó en su lugar.
+
+---
+
+## A. Resumen del proyecto
+
+**Componentes construidos (monorepo npm workspaces):**
+
+| Componente | Carpeta | Tecnologías |
+|---|---|---|
+| API REST | `apps/api` | Node.js, Express 4, JavaScript (ESM), Prisma 6 (motor WebAssembly + `@prisma/adapter-pg`), PostgreSQL, JWT, bcryptjs, Zod, Helmet, express-rate-limit, CORS |
+| App web (bodega) | `apps/web` | React 18, Vite 6, React Router 6, JavaScript |
+| App móvil (terreno) | `apps/mobile` | React Native, Expo SDK 58, React Navigation 7, expo-secure-store, JavaScript |
+| Base de datos | `apps/api/prisma` | PostgreSQL 16/18, esquema y migración Prisma |
+
+**Comunicación:** la app web y la app móvil consumen **la misma API REST** (JSON, JWT en
+`Authorization: Bearer`) y ésta usa **una sola base de datos PostgreSQL** mediante Prisma. El
+**inventario es la fuente única de información** (solo se modifica vía movimientos dentro de una
+transacción). Verificado en vivo: una cosecha creada desde el iPhone apareció en la misma base que
+consulta la web.
+
+**Alcance específico de la Evaluación 3 (Sprint 1):** BL-01 autenticación/roles; BL-02 API REST
+común; BL-03 predio y cosecha desde móvil; BL-04 despacho y recepción con diferencias; BL-05
+actualización automática de inventario en transacción atómica.
+
+**Fuera de alcance (sprints posteriores):** producción/elaborados, códigos QR, secado/impregnado,
+movimientos entre bodegas, pedidos, compras, reportería gerencial avanzada, integración SII,
+facturación electrónica, app iOS publicada en tienda.
+
+---
+
+## B. Estado de BL-01 a BL-05
+
+| ID | Funcionalidad | Estado | Cómo se verificó | Archivo o endpoint | Pendientes |
+|---|---|---|---|---|---|
+| BL-01 | Autenticación, roles y permisos | **COMPLETO Y PROBADO** | Pruebas automatizadas 1–5, 16, 17 (login JWT, 401, 403, auditoría de acceso denegado); verificado en vivo en Render | `modules/auth/*`, `middlewares/authenticate.js`, `middlewares/authorize.js`, `POST /api/auth/login` | — |
+| BL-02 | API REST común web+móvil | **COMPLETO Y PROBADO** | Web (Render) y móvil (iPhone/Expo Go) consumen la misma API; respuestas JSON consistentes; `GET /api/health` ok | `app.js`, `routes/index.js`, `utils/httpResponse.js`, `middlewares/error.js` | — |
+| BL-03 | Registro móvil de predio y cosecha | **COMPLETO Y PROBADO** | En vivo: desde el iPhone se creó predio "Fundó prueba móvil" y cosecha (pino 120 m³); confirmado vía API que persistió en la BD compartida. Pruebas 6–9 cubren la lógica en backend | `apps/mobile/src/screens/*`, `POST /api/predios`, `POST /api/cosechas`, `GET /api/cosechas/:id` | Capturas de pantalla del móvil (las tomará el equipo) |
+| BL-04 | Despacho y recepción con diferencias | **COMPLETO Y PROBADO** | Pruebas 10–13 (recepción exacta, diferencia exige resolución+observación, no recibir dos veces); verificado por curl en vivo | `modules/despachos/*`, `POST /api/despachos/:id/recepcion` | — |
+| BL-05 | Actualización automática de inventario (transacción atómica) | **COMPLETO Y PROBADO** | Prueba 14 (los 5 efectos existen y son consistentes) y 14b (rollback por FK inválida); verificado por curl (saldo 150→268) | `modules/despachos/despachos.service.js` (`prisma.$transaction`), `GET /api/inventario`, `/api/inventario/movimientos` | — |
+
+---
+
+## C. Criterios de aceptación
+
+**BL-01** — *Login válido entrega JWT; sin token 401; sin rol 403; acceso denegado auditado.*
+Evidencia: pruebas `api.test.js` #1–#5, #16, #17. Resultado real: **PASA**. Captura manual pendiente:
+pantalla de login y respuesta 403 en la web.
+
+**BL-02** — *Al menos un flujo donde el móvil registra y la web consulta sobre el mismo backend.*
+Evidencia: cosecha creada en iPhone visible vía API en la BD que usa la web. Resultado real:
+**CUMPLE** (verificado en vivo 2026-11-16). Prueba automatizada relacionada: #9 (cosecha consultable
+con su origen).
+
+**BL-03** — *Se registra predio, fecha, responsable, especie y volumen; el origen queda consultable.*
+Evidencia: pruebas #6–#9. Resultado real: **PASA**. Captura manual pendiente: registro móvil y
+detalle de cosecha con su predio.
+
+**BL-04** — *La recepción compara despachado vs recibido, registra la diferencia y exige resolución/
+incidencia cuando corresponde.* Evidencia: pruebas #10–#13. Resultado real: **PASA**.
+
+**BL-05** — *Recepción + movimiento + inventario + cambio de estado + auditoría de forma atómica;
+si algo falla, se revierte todo.* Evidencia: pruebas #14 y #14b. Resultado real: **PASA**.
+
+Incumplimientos/riesgos detectados: ninguno en la lógica probada. Riesgo externo: cold start y
+posible expiración de la BD gratuita de Render (ver sección M y N).
+
+---
+
+## D. Rúbrica (matriz de cumplimiento)
+
+| Indicador | Estado | Evidencia o archivo | Qué falta para nivel excelente |
+|---|---|---|---|
+| 2.1.1.1 Diagrama de topología | **PENDIENTE** | No existe como diagrama formal | Crear diagrama de topología de red/componentes |
+| 2.1.1.2 Diagrama de infraestructura | **PARCIAL** | `render.yaml` (infra declarada) + esquema ASCII en `README.md` | Diagrama formal (Render: DB + API + Web + Expo Go) |
+| 2.1.1.3 Diagrama de arquitectura | **PARCIAL** | Diagrama ASCII en `README.md` ("Arquitectura") | Diagrama formal (cliente web/móvil → API → PostgreSQL) |
+| 2.1.2.4 Análisis cualitativo/cuantitativo de tecnologías | **PARCIAL** | `README.md` (Tecnologías) + este informe | Documento comparativo con criterios y métricas |
+| 2.1.2.5 Selección y justificación de herramientas/lenguajes/servicios | **PARCIAL** | `README.md` (Tecnologías), `INFORME_VERIFICACION_ES3.md` | Justificación formal por cada decisión técnica |
+| 2.1.3.6 Criterios de aceptación y estándares normativos | **PARCIAL** | Criterios cubiertos por pruebas (#1–#17); normas no documentadas | Mapear a estándares/normas aplicables |
+| 2.1.3.7 Buenas prácticas, rendimiento y seguridad | **PARCIAL** | Seguridad implementada (sección E) + pruebas; rendimiento sin medir | Llenar tabla de rendimiento (`docs/PRUEBAS_Y_EVIDENCIAS.md`) con tiempos reales |
+
+> Nota honesta: el proyecto es sólido en **implementación y pruebas**, pero los **diagramas
+> formales** y el **análisis documental de tecnologías** son los entregables más débiles hoy
+> (solo existe un esquema ASCII en el README). Se marcan como PENDIENTE/PARCIAL, no como completos.
+
+---
+
+## E. Seguridad (implementado y probado)
+
+| Punto | Estado | Archivo |
+|---|---|---|
+| JWT con expiración | ✅ implementado y probado (#1) | `utils/jwt.js` (`expiresIn`), `config/env.js` |
+| Bcrypt (hash de contraseñas) | ✅ implementado y probado (#2) | `utils/password.js` (bcryptjs), `prisma/seed.js` |
+| Roles y permisos en backend | ✅ implementado y probado (#4, #16) | `middlewares/authorize.js` (verificación en servidor) |
+| Respuestas 401 / 403 | ✅ probado (#3, #4) | `middlewares/authenticate.js`, `middlewares/authorize.js`, `utils/ApiError.js` |
+| Validación de entradas | ✅ probado (#8, #11, #12) | `middlewares/validate.js` + `*.validators.js` (Zod) |
+| Helmet | ✅ implementado | `app.js` (`app.use(helmet())`) |
+| Limitación de intentos de login | ✅ implementado | `middlewares/rateLimit.js` (relajado solo en entorno de test) |
+| CORS configurable | ✅ implementado | `app.js` + `CORS_ORIGINS` (env) |
+| Variables de entorno | ✅ implementado | `config/env.js` (validación Zod), `.env.example` |
+| Auditoría | ✅ probado (#5) | `utils/audit.js`; acciones: LOGIN, ACCESO_DENEGADO, CREAR_PREDIO/COSECHA, CONFIRMAR_RECEPCION, ACTUALIZAR_INVENTARIO, RECEPCION_DUPLICADA |
+| Manejo seguro de errores (sin trazas) | ✅ implementado | `middlewares/error.js` |
+| Protección de secretos | ✅ `.gitignore` excluye `.env`; solo `.env.example` versionado | `.gitignore`, `*/.env.example` |
+| Transacción de inventario en PostgreSQL | ✅ probado (#14, #14b) | `modules/despachos/despachos.service.js` (`prisma.$transaction`) |
+
+---
+
+## F. Pruebas y verificaciones (resultados reales 2026-11-16)
+
+**Comandos ejecutados y resultado real:**
+
+| Comando | Resultado |
+|---|---|
+| `npm install` | OK (dependencias de API y Web instaladas) |
+| `pg_isready` | `127.0.0.1:5432 - accepting connections` |
+| `npm run db:seed` | OK — 4 usuarios, 3 predios, 3 cosechas, 4 despachos, 2 inventarios iniciales |
+| `npm run lint:api` | **exit 0** (sin errores) |
+| `npm run lint:web` | **exit 0** (sin errores) |
+| `npm test` | **18 pruebas, 18 aprobadas, 0 fallidas** |
+| `npm run build:web` | **OK** — 44 módulos; `dist/assets/index-*.js` 190.29 kB (gzip 60.37 kB) |
+| Arranque API (`node src/server.js`) | **OK** — `GET /api/health` → `{"status":"ok","db":"ok"}` |
+| Móvil (Expo) | Validación de sintaxis **14/14** archivos; ver nota abajo |
+
+**Salida resumida real de `npm test`:**
+```
+ ✓ tests/api.test.js (18 tests) 1246ms
+ Test Files  1 passed (1)
+      Tests  18 passed (18)
+   Duration  1.91s
+```
+
+**Pruebas fallidas:** ninguna.
+**Cobertura:** no se midió (no se ejecutó cobertura; no se reporta un número inventado).
+
+**Nota sobre Expo (honesta):** `npx expo start` **no se ejecutó dentro de este entorno de
+verificación** (requiere la CLI de Expo y un dispositivo/emulador, no disponibles en este sandbox).
+En su lugar se validó: (1) la **sintaxis JSX** de los 14 archivos del móvil con esbuild (14/14 OK), y
+(2) la **ejecución real en un iPhone físico** vía Expo Go (usando la variante de archivo único
+`apps/mobile/snack/App.js` en Expo Snack), con la que se creó un predio y una cosecha que
+persistieron en la base de datos compartida (confirmado por consulta a la API).
+
+**Nota sobre Prisma/migraciones (honesta):** en este sandbox la descarga del motor nativo de Prisma
+(`binaries.prisma.sh`) está bloqueada por red, por lo que `prisma migrate deploy` no corre aquí; la
+migración versionada `prisma/migrations/0_init/migration.sql` se aplicó con `psql` y el **runtime usa
+el motor WebAssembly** (`engineType = "client"` + `@prisma/adapter-pg`), sin binario nativo. En el
+**despliegue real en Render sí se ejecutó `npm run db:migrate` (`prisma migrate deploy`) + seed** con
+éxito (la API desplegada conecta y responde `db: ok`).
+
+---
+
+## G. Base de datos
+
+**Modelos Prisma** (`apps/api/prisma/schema.prisma`): `User`, `Predio`, `Cosecha`, `Despacho`,
+`Recepcion`, `InventoryItem`, `InventoryMovement`, `AuditLog`.
+
+**Relaciones principales:**
+- `Cosecha` → `Predio` (origen) y → `User` (responsable).
+- `Despacho` → `Cosecha?` (opcional) y → `User` (creador).
+- `Recepcion` → `Despacho` (1:1, `despachoId` único) y → `User` (receptor).
+- `InventoryMovement` → `InventoryItem`, → `Recepcion?`, → `User`.
+- `AuditLog` → `User?`.
+
+**Migraciones:** `prisma/migrations/0_init/migration.sql` (+ `migration_lock.toml`). Crea 5 enums,
+8 tablas, índices y claves foráneas.
+
+**Datos del seed** (idempotente, `prisma/seed.js`): 4 usuarios demo (uno por rol, bcrypt), 3 predios,
+3 cosechas, 4 despachos PENDIENTE, inventario inicial (Pino 150 m³, Roble 40 m³).
+
+**Tipos decimales:** todos los volúmenes/cantidades usan `Decimal` (`@db.Decimal(12,3)` o `(14,3)`)
+para evitar errores de punto flotante.
+
+**No recibir dos veces un despacho:** doble defensa — (1) el servicio rechaza con `409
+DESPACHO_YA_RECIBIDO` si el despacho ya está `RECIBIDO` o tiene recepción; (2) restricción **única**
+en `Recepcion.despachoId` a nivel de BD.
+
+**Actualización de inventario:** al confirmar recepción se suma el volumen recibido al
+`InventoryItem` de la especie (se crea si no existe) y se registra un `InventoryMovement` con saldo
+anterior/posterior. No se mantienen saldos paralelos.
+
+**Transacción de recepción:** `prisma.$transaction(async (tx) => { ... })` ejecuta, en una sola
+transacción PostgreSQL: (1) crear recepción, (2) crear/actualizar item de inventario, (3) crear
+movimiento, (4) cambiar despacho a `RECIBIDO`, (5) registrar auditoría. **Rollback:** si cualquier
+paso lanza, toda la transacción se revierte (probado en #14b: un movimiento con FK inválida revierte
+también el item creado; recuentos sin cambios).
+
+---
+
+## H. Endpoints
+
+| Método | Endpoint | Roles autorizados | Función | Estado |
+|---|---|---|---|---|
+| GET | `/api/health` | público | Estado del servicio y BD | ✅ |
+| POST | `/api/auth/login` | público | Login, entrega JWT | ✅ |
+| GET | `/api/auth/me` | autenticado | Perfil del usuario | ✅ |
+| GET | `/api/predios` | ADMIN, TERRENO | Listar predios | ✅ |
+| POST | `/api/predios` | ADMIN, TERRENO | Crear predio | ✅ |
+| GET | `/api/cosechas` | ADMIN, TERRENO | Listar cosechas (filtros) | ✅ |
+| GET | `/api/cosechas/:id` | ADMIN, TERRENO | Detalle con predio de origen | ✅ |
+| POST | `/api/cosechas` | ADMIN, TERRENO | Crear cosecha | ✅ |
+| GET | `/api/despachos` | ADMIN, BODEGA, GERENCIA | Listar despachos (`?estado=`) | ✅ |
+| GET | `/api/despachos/:id` | ADMIN, BODEGA, GERENCIA | Detalle de despacho | ✅ |
+| POST | `/api/despachos/:id/recepcion` | ADMIN, BODEGA | Registrar recepción (transacción) | ✅ |
+| GET | `/api/recepciones` | ADMIN, BODEGA, GERENCIA | Historial de recepciones | ✅ |
+| GET | `/api/inventario` | ADMIN, BODEGA, GERENCIA | Existencias por especie | ✅ |
+| GET | `/api/inventario/movimientos` | ADMIN, BODEGA, GERENCIA | Movimientos recientes | ✅ |
+| GET | `/api/resumen` | ADMIN, BODEGA, GERENCIA | Indicadores y diferencias | ✅ |
+| GET | `/api/auditoria` | ADMIN | Registro de auditoría | ✅ |
+
+Todos los endpoints mínimos de la pauta están implementados. No hay endpoints "fantasma".
+
+---
+
+## I. Aplicación web (`apps/web`)
+
+| Pantalla | Estado | Archivo |
+|---|---|---|
+| Login | ✅ terminada | `pages/LoginPage.jsx` |
+| Inicio/Dashboard (indicadores) | ✅ terminada | `pages/DashboardPage.jsx` |
+| Despachos pendientes | ✅ terminada | `pages/DespachosPage.jsx` |
+| Registro de recepción (diferencia en vivo) | ✅ terminada | `pages/RecepcionPage.jsx` |
+| Recepciones y diferencias | ✅ terminada | `pages/RecepcionesPage.jsx` |
+| Inventario | ✅ terminada | `pages/InventarioPage.jsx` |
+| Movimientos | ✅ terminada | (incluidos en `InventarioPage.jsx`) |
+| Auditoría | ✅ terminada (solo ADMIN) | `pages/AuditoriaPage.jsx` |
+| Resumen de diferencias | ✅ terminada | `pages/ResumenPage.jsx` |
+| Navegación según rol | ✅ terminada | `components/Layout.jsx`, `components/ProtectedRoute.jsx` |
+
+Build de producción verificado (`npm run build:web` → OK). Desplegada en Render (login real
+verificado en vivo).
+
+---
+
+## J. Aplicación móvil (`apps/mobile`)
+
+| Función | Estado | Archivo |
+|---|---|---|
+| Login | ✅ (probado en iPhone) | `src/screens/LoginScreen.js` |
+| Almacenamiento seguro del token | ✅ implementado (`expo-secure-store`) | `src/api/client.js`, `src/context/AuthContext.js` |
+| Consulta de predios | ✅ (probado en iPhone) | `src/screens/PrediosScreen.js` |
+| Creación de predio | ✅ (probado en iPhone — persistió en BD) | `src/screens/PredioFormScreen.js` |
+| Registro de cosecha | ✅ (probado en iPhone — persistió en BD) | `src/screens/CosechaFormScreen.js` |
+| Validaciones (volumen>0, campos, fecha) | ✅ implementado | `src/screens/CosechaFormScreen.js` |
+| Consulta del origen de la cosecha | ✅ implementado | `src/screens/CosechaDetailScreen.js` |
+| Conexión con la API real | ✅ (probado contra Render) | `src/api/client.js` |
+| Configuración de la URL de API | ✅ fuente única | `src/api/config.js` (`EXPO_PUBLIC_API_URL` / `app.json` → Render) |
+
+> La variante `apps/mobile/snack/App.js` (archivo único para Expo Snack) usa el **token en memoria**
+> en vez de SecureStore, solo para simplificar el demo sin instalar nada. La app "real"
+> (`apps/mobile`, multi-archivo) sí usa SecureStore.
+
+---
+
+## K. Usuarios de demostración
+
+| Rol | Correo | Contraseña |
+|---|---|---|
+| ADMIN | `admin@bosquesur.cl` | `Admin123*` |
+| TERRENO | `terreno@bosquesur.cl` | `Terreno123*` |
+| BODEGA | `bodega@bosquesur.cl` | `Bodega123*` |
+| GERENCIA | `gerencia@bosquesur.cl` | `Gerencia123*` |
+
+Son credenciales creadas **expresamente para demostración** (definidas en `prisma/seed.js`). No son
+secretos reales.
+
+---
+
+## L. Ejecución (comandos exactos, en orden)
+
+```bash
+# 1. Instalar dependencias (API + Web)
+npm install
+
+# 2. Crear/levantar la base de datos (PostgreSQL con Docker)
+npm run db:up
+
+# 3. Configurar variables de entorno
+cp apps/api/.env.example apps/api/.env
+cp apps/web/.env.example apps/web/.env
+
+# 4. Migraciones
+npm run db:migrate
+
+# 5. Seed
+npm run db:seed
+
+# 6. Iniciar API
+npm run dev:api            # o: npm run start:api
+
+# 7. Iniciar web
+npm run dev:web
+
+# 8. Iniciar app móvil
+cd apps/mobile && npm install && npx expo start
+
+# 9. Pruebas
+npm test
+
+# 10. Linter
+npm run lint
+
+# 11. Compilar la web
+npm run build:web
+```
+
+**Puertos:** API `4000`, Web `5173` (preview `4173`), Expo `8081`, PostgreSQL `5432`.
+
+**Teléfono físico con la API:** la app ya apunta por defecto a la API de Render
+(`https://bosquesur-api.onrender.com/api`), así que el teléfono solo necesita internet. Para apuntar
+a una API **local**, crear `apps/mobile/.env` con `EXPO_PUBLIC_API_URL=http://<IP-LOCAL-DEL-PC>:4000/api`
+(no `localhost`), con el PC y el teléfono en la **misma red Wi-Fi**; o usar `npx expo start --tunnel`.
+Requisito: Node ≥ 22.18.
+
+---
+
+## M. Despliegue
+
+| Elemento | Estado |
+|---|---|
+| Web desplegada | ✅ https://bosquesur-web.onrender.com |
+| API desplegada | ✅ https://bosquesur-api.onrender.com/api (`db: ok`) |
+| PostgreSQL | ✅ configurado en Render (gestionado) |
+| Blueprint | ✅ `render.yaml` |
+
+**Variables a configurar** (ya definidas en el blueprint): `DATABASE_URL` (desde la BD de Render),
+`JWT_SECRET` (autogenerado), `JWT_EXPIRES_IN`, `CORS_ORIGINS` (dominio de la web), `VITE_API_URL`
+(dominio de la API), `NODE_VERSION=22.18.0`.
+
+**Pasos que requieren GitHub/Render:** ya realizados (repo creado y poblado; Blueprint aplicado).
+Para re-desplegar: push a `main` (auto-sync) o re-aplicar el Blueprint.
+
+**Cold start:** en plan gratuito los servicios "duermen" tras ~15 min de inactividad; la primera
+petición puede tardar ~50 s. La base de datos gratuita puede expirar tras un periodo (Render avisa).
+
+---
+
+## N. Lista honesta de pendientes
+
+**Funcionalidades incompletas:** ninguna dentro del alcance de la Evaluación 3 (BL-01 a BL-05 están
+completas y probadas).
+
+**Errores conocidos:** ninguno en la lógica probada.
+
+**Pruebas faltantes:** no se midió cobertura; no hay prueba E2E de UI (Playwright) — mencionada como
+opcional en la pauta. La prueba del móvil fue manual (en iPhone real), no automatizada.
+
+**Documentos/diagramas faltantes (lo más importante a cerrar):**
+- Diagrama de **topología** (2.1.1.1) — no existe.
+- Diagrama de **infraestructura** formal (2.1.1.2) — solo esquema ASCII.
+- Diagrama de **arquitectura** formal (2.1.1.3) — solo esquema ASCII.
+- **Análisis cualitativo/cuantitativo** de tecnologías y **justificación** formal (2.1.2.4 / 2.1.2.5).
+
+**Evidencias a capturar manualmente (el equipo):** las 20 del checklist de
+`docs/PRUEBAS_Y_EVIDENCIAS.md` (login, 403, auditoría, recepción con diferencia, inventario
+antes/después, registro móvil, etc.) y la **tabla de rendimiento** (tiempos reales con Postman/DevTools).
+
+**Configuraciones externas pendientes:** ninguna obligatoria (todo desplegado). Opcional: guardar el
+Snack del móvil bajo una cuenta de Expo para un enlace permanente.
+
+**Riesgos para la evaluación:**
+1. **Diagramas y análisis documental** incompletos (es el punto más débil frente a la rúbrica).
+2. **Cold start / expiración de la BD gratuita** de Render el día de la demo — calentar antes y no
+   dejar la demostración para después de que expire la base.
+3. Evidencias (capturas) aún no tomadas.
