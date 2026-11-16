@@ -110,17 +110,19 @@ posible expiración de la BD gratuita de Render (ver sección M y N).
 
 | Indicador | Estado | Evidencia o archivo | Qué falta para nivel excelente |
 |---|---|---|---|
-| 2.1.1.1 Diagrama de topología | **PENDIENTE** | No existe como diagrama formal | Crear diagrama de topología de red/componentes |
-| 2.1.1.2 Diagrama de infraestructura | **PARCIAL** | `render.yaml` (infra declarada) + esquema ASCII en `README.md` | Diagrama formal (Render: DB + API + Web + Expo Go) |
-| 2.1.1.3 Diagrama de arquitectura | **PARCIAL** | Diagrama ASCII en `README.md` ("Arquitectura") | Diagrama formal (cliente web/móvil → API → PostgreSQL) |
-| 2.1.2.4 Análisis cualitativo/cuantitativo de tecnologías | **PARCIAL** | `README.md` (Tecnologías) + este informe | Documento comparativo con criterios y métricas |
-| 2.1.2.5 Selección y justificación de herramientas/lenguajes/servicios | **PARCIAL** | `README.md` (Tecnologías), `INFORME_VERIFICACION_ES3.md` | Justificación formal por cada decisión técnica |
-| 2.1.3.6 Criterios de aceptación y estándares normativos | **PARCIAL** | Criterios cubiertos por pruebas (#1–#17); normas no documentadas | Mapear a estándares/normas aplicables |
-| 2.1.3.7 Buenas prácticas, rendimiento y seguridad | **PARCIAL** | Seguridad implementada (sección E) + pruebas; rendimiento sin medir | Llenar tabla de rendimiento (`docs/PRUEBAS_Y_EVIDENCIAS.md`) con tiempos reales |
+| 2.1.1.1 Diagrama de topología | **COMPLETO Y VERIFICADO** | `docs/evaluacion3/01_TOPOLOGIA.md` + `diagramas/topologia.mmd` (Mermaid, se renderiza en GitHub) | (Opcional) exportar a SVG/PNG |
+| 2.1.1.2 Diagrama de infraestructura | **COMPLETO Y VERIFICADO** | `02_INFRAESTRUCTURA.md` + `diagramas/infraestructura.mmd` + `render.yaml` | (Opcional) SVG/PNG |
+| 2.1.1.3 Diagrama de arquitectura | **COMPLETO Y VERIFICADO** | `03_ARQUITECTURA.md` + `diagramas/arquitectura.mmd` | (Opcional) SVG/PNG |
+| 2.1.2.4 Análisis cualitativo/cuantitativo de tecnologías | **COMPLETO Y VERIFICADO** | `04_ANALISIS_TECNOLOGIAS.md` (matrices ponderadas 1–5) | — |
+| 2.1.2.5 Selección y justificación de herramientas/lenguajes/servicios | **COMPLETO Y VERIFICADO** | `05_SELECCION_Y_JUSTIFICACION.md` | — |
+| 2.1.3.6 Criterios de aceptación y estándares normativos | **COMPLETO Y VERIFICADO** | `06_CRITERIOS_Y_NORMAS.md` + pruebas (20/20); normas OWASP, IEEE 830, BPMN, Ley 19.628/21.719 con fuentes | Validar vigencia legal definitiva antes de producción |
+| 2.1.3.7 Buenas prácticas, rendimiento y seguridad | **COMPLETO Y VERIFICADO** | `07_SEGURIDAD_RENDIMIENTO.md` (seguridad por archivo + **mediciones de rendimiento reales**) | Mediciones de la **API desplegada** (procedimiento manual indicado) |
 
-> Nota honesta: el proyecto es sólido en **implementación y pruebas**, pero los **diagramas
-> formales** y el **análisis documental de tecnologías** son los entregables más débiles hoy
-> (solo existe un esquema ASCII en el README). Se marcan como PENDIENTE/PARCIAL, no como completos.
+> Nota: los **siete indicadores** cuentan con archivo/diagrama/matriz/medición concreta en
+> `docs/evaluacion3/` y coinciden con `docs/evaluacion3/08_MATRIZ_CUMPLIMIENTO_RUBRICA.md`. Lo que
+> resta para "Excelente" es evidencia manual (capturas y mediciones de la API desplegada), la
+> primera ejecución real del CI y validaciones legales; opcionalmente, exportar los diagramas a
+> imagen.
 
 ---
 
@@ -150,7 +152,8 @@ posible expiración de la BD gratuita de Render (ver sección M y N).
 
 | Comando | Resultado |
 |---|---|
-| `npm install` | OK (dependencias de API y Web instaladas) |
+| `npm ci` | OK (instalación limpia de API y Web; cliente Prisma generado en postinstall) |
+| `npm ci --prefix apps/mobile` | OK (instalación limpia de la app móvil desde su `package-lock.json`) |
 | `pg_isready` | `127.0.0.1:5432 - accepting connections` |
 | `npm run db:seed` | OK — 4 usuarios, 3 predios, 3 cosechas, 4 despachos, 2 inventarios iniciales |
 | `npm run lint:api` | **exit 0** (sin errores) |
@@ -158,7 +161,7 @@ posible expiración de la BD gratuita de Render (ver sección M y N).
 | `npm test` | **20 pruebas, 20 aprobadas, 0 fallidas** (17 criterios de la pauta + rollback + concurrencia + autorización) |
 | `npm run build:web` | **OK** — 44 módulos; `dist/assets/index-*.js` 190.29 kB (gzip 60.37 kB) |
 | Arranque API (`node src/server.js`) | **OK** — `GET /api/health` → `{"status":"ok","db":"ok"}` |
-| Móvil (Expo) | Validación de sintaxis **14/14** archivos; ver nota abajo |
+| Móvil (Expo) | Sintaxis **17/17**; `expo export --platform android` OK (848 módulos); `expo-doctor` 18/20; ver nota abajo |
 
 **Salida resumida real de `npm test`:**
 ```
@@ -171,12 +174,15 @@ posible expiración de la BD gratuita de Render (ver sección M y N).
 **Pruebas fallidas:** ninguna.
 **Cobertura:** no se midió (no se ejecutó cobertura; no se reporta un número inventado).
 
-**Nota sobre Expo (honesta):** `npx expo start` **no se ejecutó dentro de este entorno de
-verificación** (requiere la CLI de Expo y un dispositivo/emulador, no disponibles en este sandbox).
-En su lugar se validó: (1) la **sintaxis JSX** de los 14 archivos del móvil con esbuild (14/14 OK), y
-(2) la **ejecución real en un iPhone físico** vía Expo Go (usando la variante de archivo único
-`apps/mobile/snack/App.js` en Expo Snack), con la que se creó un predio y una cosecha que
-persistieron en la base de datos compartida (confirmado por consulta a la API).
+**Nota sobre Expo (honesta):** la app móvil **real multiarchivo** se validó así: (1)
+**`npm ci --prefix apps/mobile`** — instalación limpia reproducible desde su lockfile (OK);
+(2) **`npx expo export --platform android`** — Metro empaquetó el bundle correctamente (848 módulos,
+bundle `.hbc`); (3) **`npx expo-doctor`** — **18/20** checks pasan (los 2 fallos son exclusivamente de
+red: `exp.host` y React Native Directory, bloqueados en este sandbox, no defectos del proyecto);
+(4) **sintaxis 17/17** archivos con esbuild. La app real multiarchivo **NO se ejecutó en un teléfono**.
+En cambio, la **variante de archivo único** `apps/mobile/snack/App.js` (Expo Snack) **sí se ejecutó en
+un iPhone físico** vía Expo Go, creando un predio y una cosecha que persistieron en la base de datos
+compartida (confirmado por consulta a la API).
 
 **Nota sobre Prisma/migraciones (honesta):** en este sandbox la descarga del motor nativo de Prisma
 (`binaries.prisma.sh`) está bloqueada por red, por lo que `prisma migrate deploy` no corre aquí; la
@@ -380,23 +386,27 @@ completas y probadas).
 **Errores conocidos:** ninguno en la lógica probada.
 
 **Pruebas faltantes:** no se midió cobertura; no hay prueba E2E de UI (Playwright) — mencionada como
-opcional en la pauta. La prueba del móvil fue manual (en iPhone real), no automatizada.
+opcional en la pauta. La app móvil **real multiarchivo** se validó por **empaquetado** (`expo export`
+Android), **`expo-doctor` (18/20)** y **sintaxis (17/17)**, pero **no se ejecutó en un teléfono**; la
+**variante Snack** sí se ejecutó en un iPhone real.
 
-**Documentos/diagramas faltantes (lo más importante a cerrar):**
-- Diagrama de **topología** (2.1.1.1) — no existe.
-- Diagrama de **infraestructura** formal (2.1.1.2) — solo esquema ASCII.
-- Diagrama de **arquitectura** formal (2.1.1.3) — solo esquema ASCII.
-- **Análisis cualitativo/cuantitativo** de tecnologías y **justificación** formal (2.1.2.4 / 2.1.2.5).
+**Documentos/diagramas de la rúbrica:** **completos** en `docs/evaluacion3/` — topología,
+infraestructura y arquitectura (diagramas **Mermaid**), análisis cualitativo/cuantitativo, selección y
+justificación, criterios y normas, seguridad y rendimiento (con mediciones reales), matriz de
+cumplimiento, checklist y evidencias. (Ya no son un pendiente.)
 
-**Evidencias a capturar manualmente (el equipo):** las 20 del checklist de
-`docs/PRUEBAS_Y_EVIDENCIAS.md` (login, 403, auditoría, recepción con diferencia, inventario
-antes/después, registro móvil, etc.) y la **tabla de rendimiento** (tiempos reales con Postman/DevTools).
+**Pendientes reales (requieren intervención manual):**
+- **Primera ejecución del CI** en GitHub Actions (ocurre tras el push).
+- **Capturas manuales** de evidencia web y móvil — índice **E01–E24** en
+  `docs/evaluacion3/evidencias/README.md`.
+- **App móvil multiarchivo ejecutada en un dispositivo** (captura en teléfono/emulador).
+- **Mediciones de la API desplegada** (procedimiento con Postman/DevTools).
+- **Validación legal** (vigencia de la Ley 21.719) antes de una implementación productiva.
 
 **Configuraciones externas pendientes:** ninguna obligatoria (todo desplegado). Opcional: guardar el
 Snack del móvil bajo una cuenta de Expo para un enlace permanente.
 
 **Riesgos para la evaluación:**
-1. **Diagramas y análisis documental** incompletos (es el punto más débil frente a la rúbrica).
-2. **Cold start / expiración de la BD gratuita** de Render el día de la demo — calentar antes y no
+1. **Cold start / expiración de la BD gratuita** de Render el día de la demo — calentar antes y no
    dejar la demostración para después de que expire la base.
-3. Evidencias (capturas) aún no tomadas.
+2. Evidencias (capturas) aún no tomadas y CI sin su primera corrida real en GitHub.

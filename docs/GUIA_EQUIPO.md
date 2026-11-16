@@ -73,7 +73,7 @@ En el PC (requiere Node ≥ 22.18 y la app Expo Go en el teléfono):
 ```bash
 git clone https://github.com/CarlosT200/BosqueSur.git
 cd BosqueSur/apps/mobile
-npm install
+npm ci                  # instalación limpia desde apps/mobile/package-lock.json
 npx expo start          # si el teléfono no conecta: npx expo start --tunnel
 ```
 
@@ -87,7 +87,7 @@ Ver el `README.md` (sección *Instalación paso a paso*): levanta PostgreSQL con
 aplica migraciones, siembra datos y corre API + Web.
 
 ```bash
-npm install
+npm ci                  # o npm install (existe package-lock.json en la raíz)
 npm run db:up
 npm run db:migrate
 npm run db:seed
