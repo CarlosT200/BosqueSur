@@ -5,10 +5,14 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "userInterfaceStyle": "light",
-    "splash": {
-      "resizeMode": "contain",
-      "backgroundColor": "#1b3b2a"
-    },
+    "plugins": [
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#1b3b2a"
+        }
+      ]
+    ],
     "assetBundlePatterns": ["**/*"],
     "ios": { "supportsTablet": true },
     "android": {

@@ -30,14 +30,24 @@ Sobre el informe original se realizaron estas correcciones y adiciones (verifica
   19). Se generó **`apps/mobile/package-lock.json`** reproducible y se verificó **`npm ci --prefix
   apps/mobile`** (instalación limpia OK). Se agregó `babel-preset-expo` (faltaba como dependencia
   directa) y `metro.config.js`, con lo que **`npx expo export --platform android` empaqueta el bundle
-  correctamente** (Metro, 848 módulos, bundle `.hbc`). `npx expo-doctor`: **18/20** (los 2 fallos son
-  solo de red: `exp.host` y React Native Directory bloqueados en este entorno, no defectos del
-  proyecto). El CI incluye ahora `npm ci --prefix apps/mobile` + `expo export`.
+  correctamente** (Metro, 848 módulos, bundle `.hbc`). `npx expo-doctor`: **20/20 en GitHub Actions**
+  (localmente da 18/20 porque el sandbox bloquea `exp.host` y React Native Directory; en GitHub, con
+  red, pasa todo). Se corrigió además el aviso de esquema `splash` de SDK 58 (ver abajo). El CI
+  incluye ahora `npm ci --prefix apps/mobile` + `expo export`.
   > Aclaración honesta: la **app móvil real multiarchivo** se validó por **empaquetado (expo export),
   > expo-doctor y sintaxis (17/17)**, NO se ejecutó en un teléfono; la que corrió en un **iPhone
   > físico** fue la **variante Snack** (`apps/mobile/snack/App.js`).
 - **CI:** `.github/workflows/ci.yml` creado y validado localmente (YAML correcto, jobs `build-test` y
-  `mobile-validate`), **pendiente de primera ejecución real en GitHub Actions**.
+  `mobile-validate`). **Ejecutado con éxito en GitHub Actions** (run `43849653316` y la corrida
+  posterior al fix de `splash`: ambos jobs `build-test` y `mobile-validate` en **success**, 20/20
+  pruebas). La publicación ya **no** está pendiente.
+- **Fix de `splash` (SDK 58):** `expo-doctor` reportaba en GitHub 1 fallo de esquema
+  (`Additional property "splash" is not allowed`). Se instaló `expo-splash-screen@~58.0.14` (versión
+  que bundlea Expo 58) y se movió la configuración al plugin `expo-splash-screen` con
+  `backgroundColor: "#1b3b2a"` (sin imagen, porque no existe recurso gráfico). Con esto `expo-doctor`
+  llega a **20/20 en GitHub**.
+- **Despliegue tras el push:** API y Web **redesplegadas** en Render; `/api/health` → `status: ok`,
+  `db: ok`; la web carga y renderiza el panel con datos reales.
 
 ---
 
@@ -161,7 +171,7 @@ posible expiración de la BD gratuita de Render (ver sección M y N).
 | `npm test` | **20 pruebas, 20 aprobadas, 0 fallidas** (17 criterios de la pauta + rollback + concurrencia + autorización) |
 | `npm run build:web` | **OK** — 44 módulos; `dist/assets/index-*.js` 190.29 kB (gzip 60.37 kB) |
 | Arranque API (`node src/server.js`) | **OK** — `GET /api/health` → `{"status":"ok","db":"ok"}` |
-| Móvil (Expo) | Sintaxis **17/17**; `expo export --platform android` OK (848 módulos); `expo-doctor` 18/20; ver nota abajo |
+| Móvil (Expo) | Sintaxis **17/17**; `expo export --platform android` OK (848 módulos); `expo-doctor` **20/20 en GitHub** (18/20 local por red); ver nota abajo |
 
 **Salida resumida real de `npm test`:**
 ```
@@ -177,9 +187,10 @@ posible expiración de la BD gratuita de Render (ver sección M y N).
 **Nota sobre Expo (honesta):** la app móvil **real multiarchivo** se validó así: (1)
 **`npm ci --prefix apps/mobile`** — instalación limpia reproducible desde su lockfile (OK);
 (2) **`npx expo export --platform android`** — Metro empaquetó el bundle correctamente (848 módulos,
-bundle `.hbc`); (3) **`npx expo-doctor`** — **18/20** checks pasan (los 2 fallos son exclusivamente de
-red: `exp.host` y React Native Directory, bloqueados en este sandbox, no defectos del proyecto);
-(4) **sintaxis 17/17** archivos con esbuild. La app real multiarchivo **NO se ejecutó en un teléfono**.
+bundle `.hbc`); (3) **`npx expo-doctor`** — **20/20 en GitHub Actions** (localmente 18/20: el sandbox
+bloquea `exp.host` y React Native Directory; en GitHub, con red, pasan todos los checks, incluido el
+de esquema tras el fix de `splash`); (4) **sintaxis 17/17** archivos con esbuild. La app real
+multiarchivo **NO se ejecutó en un teléfono**.
 En cambio, la **variante de archivo único** `apps/mobile/snack/App.js` (Expo Snack) **sí se ejecutó en
 un iPhone físico** vía Expo Go, creando un predio y una cosecha que persistieron en la base de datos
 compartida (confirmado por consulta a la API).
@@ -387,7 +398,7 @@ completas y probadas).
 
 **Pruebas faltantes:** no se midió cobertura; no hay prueba E2E de UI (Playwright) — mencionada como
 opcional en la pauta. La app móvil **real multiarchivo** se validó por **empaquetado** (`expo export`
-Android), **`expo-doctor` (18/20)** y **sintaxis (17/17)**, pero **no se ejecutó en un teléfono**; la
+Android), **`expo-doctor` (20/20 en GitHub)** y **sintaxis (17/17)**, pero **no se ejecutó en un teléfono**; la
 **variante Snack** sí se ejecutó en un iPhone real.
 
 **Documentos/diagramas de la rúbrica:** **completos** en `docs/evaluacion3/` — topología,
@@ -396,7 +407,6 @@ justificación, criterios y normas, seguridad y rendimiento (con mediciones real
 cumplimiento, checklist y evidencias. (Ya no son un pendiente.)
 
 **Pendientes reales (requieren intervención manual):**
-- **Primera ejecución del CI** en GitHub Actions (ocurre tras el push).
 - **Capturas manuales** de evidencia web y móvil — índice **E01–E24** en
   `docs/evaluacion3/evidencias/README.md`.
 - **App móvil multiarchivo ejecutada en un dispositivo** (captura en teléfono/emulador).
@@ -409,4 +419,4 @@ Snack del móvil bajo una cuenta de Expo para un enlace permanente.
 **Riesgos para la evaluación:**
 1. **Cold start / expiración de la BD gratuita** de Render el día de la demo — calentar antes y no
    dejar la demostración para después de que expire la base.
-2. Evidencias (capturas) aún no tomadas y CI sin su primera corrida real en GitHub.
+2. Evidencias (capturas) manuales aún no tomadas (el CI ya corrió en GitHub con éxito).

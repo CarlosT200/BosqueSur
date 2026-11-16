@@ -25,14 +25,14 @@ Estados posibles: `COMPLETO Y VERIFICADO` · `COMPLETO PENDIENTE DE EVIDENCIA MA
 | Linter | **COMPLETO Y VERIFICADO** | `npm run lint` → exit 0 |
 | Build web | **COMPLETO Y VERIFICADO** | `npm run build:web` → OK |
 | Arranque API | **COMPLETO Y VERIFICADO** | `/api/health` → `db: ok` |
-| App móvil real (multiarchivo) | **COMPLETO Y VERIFICADO (empaquetado)** | `npm ci --prefix apps/mobile` OK; `expo export --platform android` empaqueta el bundle; `expo-doctor` 18/20 (2 fallos solo de red); sintaxis 17/17. **No ejecutada en dispositivo** (evidencia visual pendiente) |
+| App móvil real (multiarchivo) | **COMPLETO Y VERIFICADO (empaquetado)** | `npm ci --prefix apps/mobile` OK; `expo export --platform android` empaqueta el bundle; `expo-doctor` **20/20 en GitHub** (18/20 local por red); sintaxis 17/17. **No ejecutada en dispositivo** (evidencia visual pendiente) |
 | App móvil (variante Snack) | **COMPLETO Y VERIFICADO** | ejecutada en **iPhone físico**; creó predio/cosecha que persistió en la BD compartida |
 | Despliegue (web, API, BD) | **COMPLETO Y VERIFICADO** | URLs en vivo (`INFORME_VERIFICACION_ES3.md`, sección M) |
-| CI (GitHub Actions) | **PARCIAL** | `.github/workflows/ci.yml` creado y **validado localmente** (YAML + jobs `build-test` y `mobile-validate`); **pendiente de primera ejecución real en GitHub** |
+| CI (GitHub Actions) | **COMPLETO Y VERIFICADO** | `.github/workflows/ci.yml` **ejecutado en GitHub Actions** (run `43849653316` y la corrida posterior al fix de `splash`): jobs `build-test` y `mobile-validate` en **success**; 20/20 pruebas; `expo-doctor` 20/20 |
 | Capturas de evidencia (web/móvil) | **COMPLETO PENDIENTE DE EVIDENCIA MANUAL** | checklist en `evidencias/README.md` |
 
 ## Resumen
 Los siete indicadores de la rúbrica cuentan con **archivo/diagrama/matriz/medición concreta** y se
-marcan `COMPLETO Y VERIFICADO`. Lo que resta para "Excelente" es **evidencia manual** (capturas y
-mediciones de la API desplegada) y la **verificación real del CI** tras publicar, además de las
-validaciones legales y, opcionalmente, exportar los diagramas a imagen.
+marcan `COMPLETO Y VERIFICADO`. El **CI ya se ejecutó en GitHub Actions con éxito** (ambos jobs). Lo
+que resta para "Excelente" es **evidencia manual** (capturas y mediciones de la API desplegada),
+además de las validaciones legales y, opcionalmente, exportar los diagramas a imagen.

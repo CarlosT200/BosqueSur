@@ -29,7 +29,7 @@ Estado real al 2026-11-16 (verificado localmente). `[x]` hecho · `[ ]` pendient
 - [x] Pruebas — `npm test` → **20/20**
 - [x] Linter — `npm run lint` → exit 0 (API y Web)
 - [x] Build web — `npm run build:web` → OK
-- [x] Aplicación móvil (empaquetado) — `npm ci --prefix apps/mobile` OK; `expo export --platform android` bundle OK; `expo-doctor` 18/20 (2 fallos solo de red); sintaxis 17/17
+- [x] Aplicación móvil (empaquetado) — `npm ci --prefix apps/mobile` OK; `expo export --platform android` bundle OK; `expo-doctor` **20/20 en GitHub** (18/20 local por red; aviso `splash` corregido); sintaxis 17/17
 - [ ] Evidencia visual de la app móvil **en dispositivo** — pendiente (equipo); la variante Snack sí corrió en iPhone
 - [x] API — `/api/health` → `db: ok`
 - [x] Web — carga medida (desplegada, caliente ~160 ms)
@@ -40,7 +40,7 @@ Estado real al 2026-11-16 (verificado localmente). `[x]` hecho · `[ ]` pendient
 ## Externo / despliegue
 - [x] Repositorio en GitHub — `CarlosT200/BosqueSur`
 - [x] Web, API y PostgreSQL desplegados en Render
-- [ ] CI (GitHub Actions) — workflow creado; **verificar que finalice correctamente tras publicar**
-- [ ] Publicación de los cambios de esta etapa — **pendiente de autorización del usuario** (no se hizo push)
+- [x] CI (GitHub Actions) — **ejecutado con éxito**: jobs `build-test` y `mobile-validate` en success; 20/20 pruebas; `expo-doctor` 20/20
+- [x] Publicación de los cambios — **publicado en `main`** (push autorizado); API y Web redesplegadas en Render
 
 Leyenda: `[~]` = parcial / con pendiente asignado.

@@ -38,9 +38,11 @@ Estado: `GENERADA` (archivo presente aquí) · `PENDIENTE` (debe capturarla el r
 - Las capturas **móviles (E06–E08, E22)** requieren un teléfono con Expo Go; el equipo las toma.
 - **App móvil real (multiarchivo) — validación de empaquetado (ya realizada, a nivel de código, no
   imagen):** `npm ci --prefix apps/mobile` (instalación limpia OK) + `npx expo export --platform
-  android` (Metro empaqueta el bundle `.hbc`) + `npx expo-doctor` (18/20; 2 fallos solo por falta de
-  red a `exp.host`/RN Directory). Esto **no** es ejecución en dispositivo; E22 (captura en
-  dispositivo/emulador) sigue pendiente del equipo. La variante **Snack** sí se ejecutó en un iPhone.
+  android` (Metro empaqueta el bundle `.hbc`) + `npx expo-doctor` (**20/20 en GitHub Actions**; 18/20
+  en este sandbox por falta de red a `exp.host`/RN Directory; el aviso de esquema `splash` fue
+  corregido migrando al plugin `expo-splash-screen` de SDK 58). Esto **no** es ejecución en
+  dispositivo; E22 (captura en dispositivo/emulador) sigue pendiente del equipo. La variante **Snack**
+  sí se ejecutó en un iPhone.
 - No se generaron capturas automáticas con Playwright en este entorno porque **no fue posible
   instalar el navegador headless** (descarga bloqueada por la red del entorno de trabajo). Para
   generarlas localmente: `npx playwright install chromium` y un script que navegue a la web
