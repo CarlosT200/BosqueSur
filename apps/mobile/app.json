@@ -15,7 +15,7 @@
       "package": "cl.bosquesur.terreno"
     },
     "extra": {
-      "apiUrl": "http://192.168.1.100:4000/api"
+      "apiUrl": "https://bosquesur-api.onrender.com/api"
     }
   }
 }
