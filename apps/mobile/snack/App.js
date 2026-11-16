@@ -1,10 +1,8 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import {
   View, Text, TextInput, Pressable, ScrollView, FlatList, ActivityIndicator,
-  Alert, StyleSheet, KeyboardAvoidingView, Platform,
+  Alert, StyleSheet, KeyboardAvoidingView, Platform, SafeAreaView, StatusBar,
 } from 'react-native';
-import { NavigationContainer } from '@react-navigation/native';
-import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
 // ====================== Configuración ======================
 const API_URL = 'https://bosquesur-api.onrender.com/api';
@@ -43,7 +41,6 @@ async function request(path, { method = 'GET', body, auth = true } = {}) {
 
 const api = {
   login: (email, password) => request('/auth/login', { method: 'POST', body: { email, password }, auth: false }),
-  me: () => request('/auth/me'),
   getPredios: () => request('/predios'),
   createPredio: (payload) => request('/predios', { method: 'POST', body: payload }),
   getCosechas: () => request('/cosechas'),
@@ -56,16 +53,13 @@ const AuthContext = createContext(null);
 
 function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
-
   const login = useCallback(async (email, password) => {
     const res = await api.login(email, password);
     authToken = res.data.token;
     setUser(res.data.user);
     return res.data.user;
   }, []);
-
   const logout = useCallback(() => { authToken = null; setUser(null); }, []);
-
   return <AuthContext.Provider value={{ user, login, logout }}>{children}</AuthContext.Provider>;
 }
 
@@ -106,6 +100,44 @@ function MensajeError({ error }) {
   return <View style={ui.errorBox}><Text style={ui.errorText}>{error.message}</Text></View>;
 }
 
+// ====================== Navegación propia (sin dependencias) ======================
+const TITULOS = {
+  Home: 'BosqueSur Terreno', Predios: 'Predios', PredioForm: 'Nuevo predio',
+  Cosechas: 'Cosechas', CosechaForm: 'Nueva cosecha', CosechaDetail: 'Detalle de cosecha',
+};
+
+function Header({ title, canGoBack, onBack }) {
+  return (
+    <View style={ui.header}>
+      {canGoBack ? (
+        <Pressable onPress={onBack} hitSlop={12}><Text style={ui.headerBack}>‹ Volver</Text></Pressable>
+      ) : <View style={{ width: 60 }} />}
+      <Text style={ui.headerTitle} numberOfLines={1}>{title}</Text>
+      <View style={{ width: 60 }} />
+    </View>
+  );
+}
+
+function Navigator() {
+  const [stack, setStack] = useState([{ name: 'Home', params: {} }]);
+  const navigation = useMemo(() => ({
+    navigate: (name, params = {}) => setStack((s) => [...s, { name, params }]),
+    goBack: () => setStack((s) => (s.length > 1 ? s.slice(0, -1) : s)),
+  }), []);
+  const current = stack[stack.length - 1];
+  const Screens = { Home: HomeScreen, Predios: PrediosScreen, PredioForm: PredioFormScreen, Cosechas: CosechasScreen, CosechaForm: CosechaFormScreen, CosechaDetail: CosechaDetailScreen };
+  const Current = Screens[current.name];
+  return (
+    <SafeAreaView style={{ flex: 1, backgroundColor: colors.verde900 }}>
+      <StatusBar barStyle="light-content" backgroundColor={colors.verde900} />
+      <Header title={TITULOS[current.name]} canGoBack={stack.length > 1} onBack={navigation.goBack} />
+      <View style={{ flex: 1, backgroundColor: colors.fondo }}>
+        <Current navigation={navigation} route={{ params: current.params }} key={current.name + '-' + stack.length} />
+      </View>
+    </SafeAreaView>
+  );
+}
+
 // ====================== Pantallas ======================
 function LoginScreen() {
   const { login } = useAuth();
@@ -120,21 +152,24 @@ function LoginScreen() {
   };
 
   return (
-    <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <ScrollView contentContainerStyle={ui.loginWrap}>
-        <Text style={ui.logo}>🌲</Text>
-        <Text style={ui.titulo}>BosqueSur Terreno</Text>
-        <Text style={ui.sub}>Registro de predios y cosechas</Text>
-        <MensajeError error={error} />
-        <Campo label="Correo electrónico" value={email} onChangeText={setEmail} autoCapitalize="none" keyboardType="email-address" placeholder="terreno@bosquesur.cl" />
-        <Campo label="Contraseña" value={password} onChangeText={setPassword} secureTextEntry placeholder="••••••••" />
-        <Boton title="Iniciar sesión" onPress={onLogin} loading={cargando} />
-        <View style={ui.demo}>
-          <Text style={ui.demoText}>Demo (rol TERRENO):</Text>
-          <Text style={ui.demoText}>terreno@bosquesur.cl / Terreno123*</Text>
-        </View>
-      </ScrollView>
-    </KeyboardAvoidingView>
+    <SafeAreaView style={{ flex: 1, backgroundColor: colors.fondo }}>
+      <StatusBar barStyle="dark-content" />
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+        <ScrollView contentContainerStyle={ui.loginWrap}>
+          <Text style={ui.logo}>🌲</Text>
+          <Text style={ui.titulo}>BosqueSur Terreno</Text>
+          <Text style={ui.sub}>Registro de predios y cosechas</Text>
+          <MensajeError error={error} />
+          <Campo label="Correo electrónico" value={email} onChangeText={setEmail} autoCapitalize="none" keyboardType="email-address" placeholder="terreno@bosquesur.cl" />
+          <Campo label="Contraseña" value={password} onChangeText={setPassword} secureTextEntry placeholder="••••••••" />
+          <Boton title="Iniciar sesión" onPress={onLogin} loading={cargando} />
+          <View style={ui.demo}>
+            <Text style={ui.demoText}>Demo (rol TERRENO):</Text>
+            <Text style={ui.demoText}>terreno@bosquesur.cl / Terreno123*</Text>
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 }
 
@@ -158,14 +193,9 @@ function PrediosScreen({ navigation }) {
   const [predios, setPredios] = useState([]);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState(null);
-
-  const cargar = useCallback(() => {
-    setCargando(true); setError(null);
+  useEffect(() => {
     api.getPredios().then((r) => setPredios(r.data.predios)).catch(setError).finally(() => setCargando(false));
   }, []);
-
-  useEffect(() => { const unsub = navigation.addListener('focus', cargar); return unsub; }, [navigation, cargar]);
-
   if (cargando) return <Cargando texto="Cargando predios..." />;
   return (
     <View style={ui.screen}>
@@ -190,7 +220,6 @@ function PredioFormScreen({ navigation }) {
   const [descripcion, setDescripcion] = useState('');
   const [error, setError] = useState(null);
   const [guardando, setGuardando] = useState(false);
-
   const guardar = async () => {
     setError(null);
     if (!nombre.trim() || !ubicacion.trim()) return setError({ message: 'El nombre y la ubicación son obligatorios.' });
@@ -200,7 +229,6 @@ function PredioFormScreen({ navigation }) {
       Alert.alert('Predio creado', 'El predio se registró correctamente.', [{ text: 'OK', onPress: () => navigation.goBack() }]);
     } catch (err) { setError(err); } finally { setGuardando(false); }
   };
-
   return (
     <ScrollView contentContainerStyle={ui.formWrap}>
       <MensajeError error={error} />
@@ -216,14 +244,9 @@ function CosechasScreen({ navigation }) {
   const [cosechas, setCosechas] = useState([]);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState(null);
-
-  const cargar = useCallback(() => {
-    setCargando(true); setError(null);
+  useEffect(() => {
     api.getCosechas().then((r) => setCosechas(r.data.cosechas)).catch(setError).finally(() => setCargando(false));
   }, []);
-
-  useEffect(() => { const unsub = navigation.addListener('focus', cargar); return unsub; }, [navigation, cargar]);
-
   if (cargando) return <Cargando texto="Cargando cosechas..." />;
   return (
     <View style={ui.screen}>
@@ -302,19 +325,15 @@ function CosechaDetailScreen({ route }) {
   const [cosecha, setCosecha] = useState(null);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState(null);
-
   useEffect(() => {
     api.getCosecha(id).then((r) => setCosecha(r.data.cosecha)).catch(setError).finally(() => setCargando(false));
   }, [id]);
-
   if (cargando) return <Cargando />;
   if (error) return <View style={ui.screen}><MensajeError error={error} /></View>;
   if (!cosecha) return null;
-
   const Fila = ({ label, value }) => (
     <View style={ui.fila}><Text style={ui.suave}>{label}</Text><Text style={ui.filaValue}>{value}</Text></View>
   );
-
   return (
     <ScrollView contentContainerStyle={ui.formWrap}>
       <Text style={ui.titulo}>{cosecha.especie}</Text>
@@ -335,41 +354,16 @@ function CosechaDetailScreen({ route }) {
   );
 }
 
-// ====================== Navegación ======================
-const Stack = createNativeStackNavigator();
-const screenOptions = {
-  headerStyle: { backgroundColor: colors.verde900 },
-  headerTintColor: '#ffffff',
-  headerTitleStyle: { fontWeight: '700' },
-  contentStyle: { backgroundColor: colors.fondo },
-};
-
-function Navegacion() {
+// ====================== Raíz ======================
+function Root() {
   const { user } = useAuth();
-  return (
-    <Stack.Navigator screenOptions={screenOptions}>
-      {!user ? (
-        <Stack.Screen name="Login" component={LoginScreen} options={{ headerShown: false }} />
-      ) : (
-        <>
-          <Stack.Screen name="Home" component={HomeScreen} options={{ title: 'BosqueSur Terreno' }} />
-          <Stack.Screen name="Predios" component={PrediosScreen} options={{ title: 'Predios' }} />
-          <Stack.Screen name="PredioForm" component={PredioFormScreen} options={{ title: 'Nuevo predio' }} />
-          <Stack.Screen name="Cosechas" component={CosechasScreen} options={{ title: 'Cosechas' }} />
-          <Stack.Screen name="CosechaForm" component={CosechaFormScreen} options={{ title: 'Nueva cosecha' }} />
-          <Stack.Screen name="CosechaDetail" component={CosechaDetailScreen} options={{ title: 'Detalle de cosecha' }} />
-        </>
-      )}
-    </Stack.Navigator>
-  );
+  return user ? <Navigator /> : <LoginScreen />;
 }
 
 export default function App() {
   return (
     <AuthProvider>
-      <NavigationContainer>
-        <Navegacion />
-      </NavigationContainer>
+      <Root />
     </AuthProvider>
   );
 }
@@ -385,7 +379,10 @@ const ui = StyleSheet.create({
   suave: { color: colors.textoSuave },
   errorBox: { backgroundColor: colors.rojo100, borderRadius: 8, padding: 12, marginBottom: 12 },
   errorText: { color: colors.rojo, fontSize: 14 },
-  loginWrap: { flexGrow: 1, justifyContent: 'center', padding: 24, backgroundColor: colors.fondo },
+  header: { height: 52, backgroundColor: colors.verde900, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 12 },
+  headerTitle: { color: colors.blanco, fontSize: 17, fontWeight: '700', flex: 1, textAlign: 'center' },
+  headerBack: { color: colors.blanco, fontSize: 16, width: 60 },
+  loginWrap: { flexGrow: 1, justifyContent: 'center', padding: 24 },
   logo: { fontSize: 56, textAlign: 'center' },
   titulo: { fontSize: 24, fontWeight: '800', color: colors.verde900, textAlign: 'center', marginTop: 8 },
   sub: { textAlign: 'center', color: colors.textoSuave, marginBottom: 24 },
