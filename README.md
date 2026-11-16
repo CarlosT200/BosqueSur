@@ -5,6 +5,10 @@ Caso: **BosqueSur Maderas SpA**, empresa forestal que necesita mejorar la trazab
 materia prima y controlar las diferencias entre lo despachado y lo recibido, evitando descuadres
 de inventario y registros paralelos.
 
+> 🚀 **¿Solo quieres probarlo o mostrarlo?** Está todo desplegado. Ve directo a
+> **[`docs/GUIA_EQUIPO.md`](docs/GUIA_EQUIPO.md)** (URLs en vivo, usuarios demo, y cómo
+> probar web y móvil sin instalar nada).
+
 ## Problema abordado
 
 Hoy existe el riesgo de mantener registros inconsistentes entre **terreno**, **bodega** y
