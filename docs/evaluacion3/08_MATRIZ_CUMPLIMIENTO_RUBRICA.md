@@ -25,10 +25,10 @@ Estados posibles: `COMPLETO Y VERIFICADO` · `COMPLETO PENDIENTE DE EVIDENCIA MA
 | Linter | **COMPLETO Y VERIFICADO** | `npm run lint` → exit 0 |
 | Build web | **COMPLETO Y VERIFICADO** | `npm run build:web` → OK |
 | Arranque API | **COMPLETO Y VERIFICADO** | `/api/health` → `db: ok` |
-| App móvil real (multiarchivo) | **COMPLETO PENDIENTE DE EVIDENCIA MANUAL** | sintaxis 14/14; falta `expo-doctor`/dispositivo (ver `evidencias/README.md`) |
-| App móvil (variante Snack) | **COMPLETO Y VERIFICADO** | ejecutada en iPhone; creó predio/cosecha que persistió en la BD |
+| App móvil real (multiarchivo) | **COMPLETO Y VERIFICADO (empaquetado)** | `npm ci --prefix apps/mobile` OK; `expo export --platform android` empaqueta el bundle; `expo-doctor` 18/20 (2 fallos solo de red); sintaxis 17/17. **No ejecutada en dispositivo** (evidencia visual pendiente) |
+| App móvil (variante Snack) | **COMPLETO Y VERIFICADO** | ejecutada en **iPhone físico**; creó predio/cosecha que persistió en la BD compartida |
 | Despliegue (web, API, BD) | **COMPLETO Y VERIFICADO** | URLs en vivo (`INFORME_VERIFICACION_ES3.md`, sección M) |
-| CI (GitHub Actions) | **PARCIAL** | `.github/workflows/ci.yml` creado; **no verificado** hasta una corrida real en GitHub |
+| CI (GitHub Actions) | **PARCIAL** | `.github/workflows/ci.yml` creado y **validado localmente** (YAML + jobs `build-test` y `mobile-validate`); **pendiente de primera ejecución real en GitHub** |
 | Capturas de evidencia (web/móvil) | **COMPLETO PENDIENTE DE EVIDENCIA MANUAL** | checklist en `evidencias/README.md` |
 
 ## Resumen

@@ -36,6 +36,11 @@ Estado: `GENERADA` (archivo presente aquí) · `PENDIENTE` (debe capturarla el r
 - Las evidencias **E24** (diagramas) ya están en el repositorio y GitHub las renderiza.
 - Para **E17–E19**, basta pegar la salida real de `npm test`, `npm run lint` y `npm run build:web`.
 - Las capturas **móviles (E06–E08, E22)** requieren un teléfono con Expo Go; el equipo las toma.
+- **App móvil real (multiarchivo) — validación de empaquetado (ya realizada, a nivel de código, no
+  imagen):** `npm ci --prefix apps/mobile` (instalación limpia OK) + `npx expo export --platform
+  android` (Metro empaqueta el bundle `.hbc`) + `npx expo-doctor` (18/20; 2 fallos solo por falta de
+  red a `exp.host`/RN Directory). Esto **no** es ejecución en dispositivo; E22 (captura en
+  dispositivo/emulador) sigue pendiente del equipo. La variante **Snack** sí se ejecutó en un iPhone.
 - No se generaron capturas automáticas con Playwright en este entorno porque **no fue posible
   instalar el navegador headless** (descarga bloqueada por la red del entorno de trabajo). Para
   generarlas localmente: `npx playwright install chromium` y un script que navegue a la web

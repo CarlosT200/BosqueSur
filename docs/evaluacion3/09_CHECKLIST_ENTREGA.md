@@ -10,6 +10,7 @@ Estado real al 2026-11-16 (verificado localmente). `[x]` hecho · `[ ]` pendient
 - [x] Migraciones — `apps/api/prisma/migrations/0_init/migration.sql`
 - [x] Seed — `apps/api/prisma/seed.js`
 - [x] Demo reset seguro — `apps/api/prisma/demo-reset.js` (`npm run demo:reset`)
+- [x] Lockfile móvil reproducible — `apps/mobile/package-lock.json` (verificado con `npm ci`)
 - [x] Variables de entorno — `.env.example` (raíz, api, web, mobile)
 - [x] Sin secretos en el repositorio — `.gitignore` excluye `.env`
 
@@ -28,7 +29,8 @@ Estado real al 2026-11-16 (verificado localmente). `[x]` hecho · `[ ]` pendient
 - [x] Pruebas — `npm test` → **20/20**
 - [x] Linter — `npm run lint` → exit 0 (API y Web)
 - [x] Build web — `npm run build:web` → OK
-- [~] Aplicación móvil — sintaxis 14/14; variante Snack ejecutada en iPhone; **`expo-doctor`/`expo export` pendientes** (equipo)
+- [x] Aplicación móvil (empaquetado) — `npm ci --prefix apps/mobile` OK; `expo export --platform android` bundle OK; `expo-doctor` 18/20 (2 fallos solo de red); sintaxis 17/17
+- [ ] Evidencia visual de la app móvil **en dispositivo** — pendiente (equipo); la variante Snack sí corrió en iPhone
 - [x] API — `/api/health` → `db: ok`
 - [x] Web — carga medida (desplegada, caliente ~160 ms)
 - [ ] Capturas (web y móvil) — **pendiente, equipo** (ver `evidencias/README.md`)

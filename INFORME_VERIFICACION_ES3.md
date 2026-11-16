@@ -25,7 +25,19 @@ Sobre el informe original se realizaron estas correcciones y adiciones (verifica
   infraestructura y arquitectura en **Mermaid** (`.mmd` + renderizado en GitHub), más análisis
   comparativo, justificación, criterios/normas, seguridad/rendimiento (con **mediciones reales**),
   matriz de rúbrica, checklist y evidencias. Esto eleva la sección D (rúbrica) de PARCIAL a completo.
-- **CI:** `.github/workflows/ci.yml` creado (pendiente de verificación en una corrida real de Actions).
+- **App móvil validada de verdad (no solo sintaxis):** se corrigió la inconsistencia de versión en
+  `README.md` (decía SDK 52; la versión real declarada e instalada es **Expo 58** / RN 0.88 / React
+  19). Se generó **`apps/mobile/package-lock.json`** reproducible y se verificó **`npm ci --prefix
+  apps/mobile`** (instalación limpia OK). Se agregó `babel-preset-expo` (faltaba como dependencia
+  directa) y `metro.config.js`, con lo que **`npx expo export --platform android` empaqueta el bundle
+  correctamente** (Metro, 848 módulos, bundle `.hbc`). `npx expo-doctor`: **18/20** (los 2 fallos son
+  solo de red: `exp.host` y React Native Directory bloqueados en este entorno, no defectos del
+  proyecto). El CI incluye ahora `npm ci --prefix apps/mobile` + `expo export`.
+  > Aclaración honesta: la **app móvil real multiarchivo** se validó por **empaquetado (expo export),
+  > expo-doctor y sintaxis (17/17)**, NO se ejecutó en un teléfono; la que corrió en un **iPhone
+  > físico** fue la **variante Snack** (`apps/mobile/snack/App.js`).
+- **CI:** `.github/workflows/ci.yml` creado y validado localmente (YAML correcto, jobs `build-test` y
+  `mobile-validate`), **pendiente de primera ejecución real en GitHub Actions**.
 
 ---
 

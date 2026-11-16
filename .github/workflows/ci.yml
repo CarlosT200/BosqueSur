@@ -67,3 +67,35 @@ jobs:
 
       - name: Build de la web
         run: npm run build:web
+
+  mobile-validate:
+    runs-on: ubuntu-latest
+    env:
+      CI: "1"
+      EXPO_NO_TELEMETRY: "1"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22.18.0"
+
+      - name: Instalar dependencias de la app móvil
+        run: npm ci --prefix apps/mobile
+
+      - name: Validar proyecto Expo (expo-doctor)
+        working-directory: apps/mobile
+        # continue-on-error: algunas comprobaciones de expo-doctor requieren red
+        # externa (exp.host / React Native Directory) y pueden fallar según el runner.
+        continue-on-error: true
+        run: npx --yes expo-doctor
+
+      - name: Exportar bundle Android (validación reproducible, sin emulador)
+        working-directory: apps/mobile
+        run: npx --yes expo export --platform android --output-dir dist-ci
+
+      - name: Limpiar artefactos del bundle
+        if: always()
+        run: rm -rf apps/mobile/dist-ci

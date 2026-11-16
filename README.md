@@ -39,7 +39,7 @@ facturación electrónica y app iOS publicada. Ver sección *Trabajo futuro*.
 - **Base de datos**: PostgreSQL 16.
 - **ORM**: Prisma 6 (motor **queryCompiler/WebAssembly** + driver adapter `@prisma/adapter-pg`, sin binario nativo).
 - **Web**: React 18 + Vite.
-- **Móvil**: React Native + Expo (SDK 52), con `expo-secure-store` para el JWT.
+- **Móvil**: React Native 0.88 + Expo (SDK 58) + React 19, con `expo-secure-store` para el JWT.
 - **Autenticación**: JWT con expiración; contraseñas con hash **bcrypt** (`bcryptjs`).
 - **Seguridad**: `helmet`, CORS configurable, rate limit de login, validación con **Zod**, auditoría.
 - **Pruebas**: Vitest + Supertest.
@@ -123,11 +123,12 @@ npm run db:seed
 # 5. Ejecutar API + Web (en paralelo)
 npm run dev
 
-# 6. App móvil (en otra terminal)
+# 6. App móvil (en otra terminal) — tiene su propio package-lock.json
 cd apps/mobile
-npm install
+npm ci                   # instalación limpia reproducible (o: npm install)
 cp .env.example .env     # ajustar EXPO_PUBLIC_API_URL con la IP local del PC
 npm start                # abrir con Expo Go
+# Validación sin teléfono (opcional): npx expo-doctor  y  npx expo export --platform android --output-dir dist-ci
 ```
 
 > Si tu red bloquea la descarga de los binarios de Prisma al generar el cliente, ejecuta los
@@ -215,8 +216,8 @@ construcción de la API ejecuta `prisma migrate deploy`.
 Los workspaces de npm incluyen **`apps/api`** y **`apps/web`**. La app móvil **`apps/mobile`** se
 mantiene como **instalación separada (fuera de los workspaces)** de forma deliberada: Expo/Metro
 tiene supuestos propios sobre la resolución de `node_modules` y el *hoisting* de dependencias que, al
-compartir el `node_modules` raíz, puede romper el empaquetado. Por eso se instala aparte
-(`cd apps/mobile && npm install`). De todos modos existe el comando raíz **`npm run dev:mobile`**
+compartir el `node_modules` raíz, puede romper el empaquetado. Por eso se instala aparte con su propio
+lockfile (`cd apps/mobile && npm ci`). De todos modos existe el comando raíz **`npm run dev:mobile`**
 para iniciarla. Si en el futuro se desea unificarla en los workspaces, debe añadirse un
 `metro.config.js` con `watchFolders`/`nodeModulesPaths` y verificarse en un entorno con Expo.
 
